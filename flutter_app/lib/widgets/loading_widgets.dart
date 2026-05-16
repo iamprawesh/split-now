@@ -313,6 +313,7 @@ class LoadingButton extends StatelessWidget {
   final Color? backgroundColor;
   final Color? foregroundColor;
   final IconData? icon;
+  final BorderSide? borderSide;
 
   const LoadingButton({
     super.key,
@@ -323,6 +324,7 @@ class LoadingButton extends StatelessWidget {
     this.backgroundColor,
     this.foregroundColor,
     this.icon,
+    this.borderSide,
   });
 
   @override
@@ -340,6 +342,7 @@ class LoadingButton extends StatelessWidget {
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
+            side: borderSide ?? BorderSide.none,
           ),
         ),
         child: isLoading

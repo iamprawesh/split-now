@@ -172,6 +172,34 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     setState(() {});
   }
 
+  void _confirmDelete() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Expense'),
+        content: Text('Delete "${widget.expense!.title}"? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ref.read(expenseProvider.notifier).deleteExpense(
+                    widget.groupId,
+                    widget.expense!.id,
+                  );
+              Navigator.pop(context);
+            },
+            style: TextButton.styleFrom(foregroundColor: redAccent),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _submit() {
     final title = _titleController.text.trim();
     final description = _descController.text.trim();
@@ -231,6 +259,13 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          if (_isEditing)
+            IconButton(
+              icon: const Icon(Icons.delete_outline, size: 22),
+              onPressed: () => _confirmDelete(),
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),

@@ -55,33 +55,6 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
     );
   }
 
-  void _confirmDeleteExpense(Expense exp) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Expense'),
-        content: Text('Delete "${exp.title}"? This cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              ref.read(expenseProvider.notifier).deleteExpense(
-                    widget.groupId,
-                    exp.id,
-                  );
-            },
-            style: TextButton.styleFrom(foregroundColor: redAccent),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   void dispose() {
     _tabController.dispose();
@@ -325,113 +298,119 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
 
   Widget _expenseCard(Expense exp, Group group, Currency currency, String userId) {
     final isAdminUser = _isAdmin(group, userId);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
       child: Material(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Center(
-                  child: Text(
-                    exp.paidByName.isNotEmpty
-                        ? exp.paidByName[0].toUpperCase()
-                        : '?',
-                    style: const TextStyle(
-                      color: accent,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
+        borderRadius: BorderRadius.circular(14),
+        elevation: 0,
+        shadowColor: Colors.black.withValues(alpha: 0.04),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: isAdminUser
+              ? () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AddExpenseScreen(
+                        groupId: widget.groupId,
+                        members: group.members,
+                        expense: exp,
+                      ),
+                    ),
+                  )
+              : null,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  margin: const EdgeInsets.only(top: 2),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [accent, Color(0xFF7C80F5)],
+                    ),
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: Center(
+                    child: Text(
+                      exp.paidByName.isNotEmpty
+                          ? exp.paidByName[0].toUpperCase()
+                          : '?',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(exp.title,
-                        style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: textPrimary)),
-                    const SizedBox(height: 2),
-                    Text('Paid by ${exp.paidByName}',
-                        style: const TextStyle(
-                            fontSize: 13, color: textSecondary)),
-                  ],
-                ),
-              ),
-              Text(currency.format(exp.amount),
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: textPrimary,
-                  )),
-              if (isAdminUser) ...[
-                const SizedBox(width: 4),
-                PopupMenuButton<String>(
-                  padding: EdgeInsets.zero,
-                  icon: const Icon(Icons.more_horiz,
-                      size: 20, color: textSecondary),
-                  onSelected: (value) {
-                    if (value == 'edit') {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => AddExpenseScreen(
-                            groupId: widget.groupId,
-                            members: group.members,
-                            expense: exp,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(exp.title,
+                                style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: textPrimary),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis),
                           ),
-                        ),
-                      );
-                    } else if (value == 'delete') {
-                      _confirmDeleteExpense(exp);
-                    }
-                  },
-                  itemBuilder: (_) => [
-                    const PopupMenuItem(
-                      value: 'edit',
-                      child: Row(
-                        children: [
-                          Icon(Icons.edit_outlined,
-                              size: 18, color: textSecondary),
-                          SizedBox(width: 10),
-                          Text('Edit',
-                              style: TextStyle(color: textPrimary)),
+                          Text(currency.format(exp.amount),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: textPrimary,
+                              )),
                         ],
                       ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Row(
+                      const SizedBox(height: 4),
+                      Row(
                         children: [
-                          Icon(Icons.delete_outline,
-                              size: 18, color: redAccent),
-                          SizedBox(width: 10),
-                          Text('Delete',
-                              style: TextStyle(color: redAccent)),
+                          Icon(Icons.person_outline,
+                              size: 13, color: textSecondary.withValues(alpha: 0.7)),
+                          const SizedBox(width: 4),
+                          Text('Paid by ${exp.paidByName}',
+                              style: const TextStyle(
+                                  fontSize: 13, color: textSecondary)),
+                          const Spacer(),
+                          Text(
+                            _timeAgo(exp.date),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: textSecondary.withValues(alpha: 0.6),
+                            ),
+                          ),
                         ],
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
-            ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  String _timeAgo(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 1) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    return '${diff.inDays ~/ 7}w ago';
   }
 
   Widget _balancesTab(ExpenseState expenseState, Group group, String userId, Currency currency) {

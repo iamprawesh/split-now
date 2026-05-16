@@ -8,6 +8,7 @@ import 'create_group_screen.dart';
 import 'join_group_screen.dart';
 import 'group_detail_screen.dart';
 import 'settings_screen.dart';
+import 'voice_create_group_sheet.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -105,13 +106,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           : groupState.groups.isEmpty
               ? _emptyState()
               : _groupList(groupState),
-      floatingActionButton: SizedBox(
-        width: 52,
-        height: 52,
-        child: FloatingActionButton(
-          onPressed: () => _createGroup(context),
-          child: const Icon(Icons.add, size: 24),
-        ),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 48,
+            height: 48,
+            child: FloatingActionButton(
+              heroTag: 'voice',
+              backgroundColor: Colors.white,
+              onPressed: () => _voiceCreateGroup(context),
+              child: const Icon(Icons.mic, size: 22, color: accent),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: 52,
+            height: 52,
+            child: FloatingActionButton(
+              heroTag: 'create',
+              onPressed: () => _createGroup(context),
+              child: const Icon(Icons.add, size: 24),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -253,6 +271,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const CreateGroupScreen()),
+    );
+  }
+
+  void _voiceCreateGroup(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => const VoiceCreateGroupSheet(),
     );
   }
 

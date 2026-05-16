@@ -6,8 +6,15 @@ import '../widgets/loading_widgets.dart';
 
 class CreateGroupScreen extends ConsumerStatefulWidget {
   final Group? group;
+  final String? initialName;
+  final String? initialDescription;
 
-  const CreateGroupScreen({super.key, this.group});
+  const CreateGroupScreen({
+    super.key,
+    this.group,
+    this.initialName,
+    this.initialDescription,
+  });
 
   @override
   ConsumerState<CreateGroupScreen> createState() => _CreateGroupScreenState();
@@ -20,8 +27,12 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.group?.name ?? '');
-    _descController = TextEditingController(text: widget.group?.description ?? '');
+    _nameController = TextEditingController(
+      text: widget.initialName ?? widget.group?.name ?? '',
+    );
+    _descController = TextEditingController(
+      text: widget.initialDescription ?? widget.group?.description ?? '',
+    );
   }
 
   @override

@@ -3,11 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'providers/auth_provider.dart';
 import 'providers/settings_provider.dart';
-import 'providers/group_provider.dart';
-import 'providers/notification_provider.dart';
-import 'screens/auth_screen.dart';
-import 'screens/home_screen.dart';
-import 'screens/activity_screen.dart';
+import 'screens/splash_screen.dart';
 
 const Color accent = Color(0xFF5B5FEF);
 const Color surfaceBg = Color(0xFFF8F9FA);
@@ -38,8 +34,6 @@ class SplitwiseApp extends ConsumerStatefulWidget {
 }
 
 class _SplitwiseAppState extends ConsumerState<SplitwiseApp> {
-  int _currentIndex = 0;
-
   @override
   void initState() {
     super.initState();
@@ -52,12 +46,11 @@ class _SplitwiseAppState extends ConsumerState<SplitwiseApp> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
     final settings = ref.watch(settingsProvider);
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'SplitWise',
+      title: 'SplitEase',
       themeMode: settings.themeMode,
       theme: ThemeData(
         useMaterial3: true,
@@ -311,45 +304,7 @@ class _SplitwiseAppState extends ConsumerState<SplitwiseApp> {
           shape: CircleBorder(),
         ),
       ),
-      home: authState.isLoading
-          ? const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            )
-          : !authState.isAuthenticated
-              ? const AuthScreen()
-              : Scaffold(
-                  body: IndexedStack(
-                    index: _currentIndex,
-                    children: const [
-                      HomeScreen(),
-                      ActivityScreen(),
-                    ],
-                  ),
-                  bottomNavigationBar: NavigationBar(
-                    selectedIndex: _currentIndex,
-                    onDestinationSelected: (i) {
-                        setState(() => _currentIndex = i);
-                        if (i == 0) {
-                          ref.read(groupProvider.notifier).loadGroups();
-                        } else if (i == 1) {
-                          ref.read(notificationProvider.notifier).loadNotifications();
-                          ref.read(notificationProvider.notifier).loadUnreadCount();
-                        }
-                      },
-                    destinations: const [
-                      NavigationDestination(
-                        icon: Icon(Icons.groups_outlined),
-                        selectedIcon: Icon(Icons.groups),
-                        label: 'Groups',
-                      ),
-                      NavigationDestination(
-                        icon: Icon(Icons.notifications_outlined),
-                        selectedIcon: Icon(Icons.notifications),
-                        label: 'Activity',
-                      ),
-                    ],
-                  ),
-                ),
+      home: const SplashScreen(),
     );
   }
 }
