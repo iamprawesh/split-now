@@ -6,6 +6,7 @@ import '../models/currency.dart';
 import '../providers/expense_provider.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/loading_widgets.dart';
+import '../providers/auth_provider.dart';
 import '../main.dart';
 
 class SettleUpScreen extends ConsumerStatefulWidget {
@@ -27,6 +28,29 @@ class SettleUpScreen extends ConsumerStatefulWidget {
 }
 
 class _SettleUpScreenState extends ConsumerState<SettleUpScreen> {
+  final Set<String> _reminding = {};
+
+  Future<void> _sendRemind(String userId, String userName) async {
+    setState(() => _reminding.add(userId));
+    try {
+      final api = ref.read(apiServiceProvider);
+      await api.post('/groups/${widget.groupId}/settlements/remind/$userId');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Reminder sent to $userName')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send reminder: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _reminding.remove(userId));
+    }
+  }
+
   String _memberName(String id) {
     final m = widget.members.firstWhere(
       (m) => m.userId == id,
@@ -82,69 +106,146 @@ class _SettleUpScreenState extends ConsumerState<SettleUpScreen> {
                     borderRadius: BorderRadius.circular(14),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: isOwing
-                                  ? redAccent.withValues(alpha: 0.08)
-                                  : greenAccent.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(
-                              isOwing
-                                  ? Icons.arrow_upward
-                                  : Icons.arrow_downward,
-                              color: isOwing ? redAccent : greenAccent,
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  isOwing
-                                      ? 'You owe $otherName'
-                                      : '$otherName owes you',
-                                  style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
-                                      color: textPrimary),
+                          Row(
+                            children: [
+                              Container(
+                                width: 42,
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  color: isOwing
+                                      ? redAccent.withValues(alpha: 0.08)
+                                      : greenAccent.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                                const SizedBox(height: 2),
-                                Text(currency.format(tx.amount),
-                                    style: const TextStyle(
-                                        fontSize: 14, color: textSecondary)),
-                              ],
-                            ),
-                          ),
-                          ElevatedButton(
-                            onPressed: expenseState.isSettling
-                                ? null
-                                : () => _confirm(tx, currency),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 10),
-                              backgroundColor: accent,
-                              foregroundColor: Colors.white,
-                              disabledBackgroundColor: accent.withValues(alpha: 0.4),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
+                                child: Icon(
+                                  isOwing
+                                      ? Icons.arrow_upward
+                                      : Icons.arrow_downward,
+                                  color: isOwing ? redAccent : greenAccent,
+                                  size: 20,
+                                ),
                               ),
-                              textStyle: const TextStyle(
-                                  fontSize: 13, fontWeight: FontWeight.w600),
-                            ),
-                            child: expenseState.isSettling
-                                ? const SizedBox(
-                                    width: 16, height: 16,
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2, color: Colors.white),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      isOwing
+                                          ? 'You owe $otherName'
+                                          : '$otherName owes you',
+                                      style: const TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                          color: textPrimary),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(currency.format(tx.amount),
+                                        style: const TextStyle(
+                                            fontSize: 14,
+                                            color: textSecondary)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: isOwing
+                                ? ElevatedButton(
+                                    onPressed: expenseState.isSettling
+                                        ? null
+                                        : () => _confirm(tx, currency),
+                                    style: ElevatedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 20, vertical: 10),
+                                      backgroundColor: accent,
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      textStyle: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600),
+                                    ),
+                                    child: expenseState.isSettling
+                                        ? const SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Colors.white),
+                                          )
+                                        : const Text('Pay'),
                                   )
-                                : const Text('Pay'),
+                                : Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      ElevatedButton(
+                                        onPressed: expenseState.isSettling
+                                            ? null
+                                            : () => _confirm(tx, currency),
+                                        style: ElevatedButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 14, vertical: 10),
+                                          backgroundColor: greenAccent,
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                          ),
+                                          textStyle: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600),
+                                        ),
+                                        child: const Text('Settle Up'),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      OutlinedButton.icon(
+                                        onPressed: _reminding.contains(tx.from)
+                                            ? null
+                                            : () => _sendRemind(
+                                                tx.from,
+                                                _memberName(tx.from)),
+                                        style: OutlinedButton.styleFrom(
+                                          padding:
+                                              const EdgeInsets.symmetric(
+                                                  horizontal: 14,
+                                                  vertical: 10),
+                                          foregroundColor: textSecondary,
+                                          side: BorderSide(
+                                              color: textSecondary
+                                                  .withValues(alpha: 0.3)),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                          ),
+                                          textStyle: const TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600),
+                                        ),
+                                        icon: _reminding.contains(tx.from)
+                                            ? const SizedBox(
+                                                width: 14,
+                                                height: 14,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                        strokeWidth: 2),
+                                              )
+                                            : const Icon(
+                                                Icons.notifications_none,
+                                                size: 18),
+                                        label: Text(_reminding.contains(
+                                                tx.from)
+                                            ? 'Sending'
+                                            : 'Remind'),
+                                      ),
+                                    ],
+                                  ),
                           ),
                         ],
                       ),

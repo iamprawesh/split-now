@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'providers/auth_provider.dart';
 import 'providers/settings_provider.dart';
+import 'services/notification_service.dart';
 import 'screens/splash_screen.dart';
 
 const Color accent = Color(0xFF5B5FEF);
@@ -37,10 +38,11 @@ class _SplitwiseAppState extends ConsumerState<SplitwiseApp> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
-      ref.read(apiServiceProvider).init();
+    Future.microtask(() async {
+      await ref.read(apiServiceProvider).init();
       ref.read(authProvider.notifier).checkAuth();
       ref.read(settingsProvider.notifier).loadSettings();
+      ref.read(notificationServiceProvider).init();
     });
   }
 

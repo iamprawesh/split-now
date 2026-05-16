@@ -49,5 +49,6 @@ router.use(verifyToken);
  */
 router.get('/', settlementController.getSettlements);
 router.post('/', settlementController.createSettlement);
+router.post('/remind/:userId', settlementController.remindUser);
 
 module.exports = router;

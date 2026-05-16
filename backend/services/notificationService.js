@@ -1,10 +1,14 @@
 const { admin } = require('../config/firebase');
 const User = require('../models/User');
 
-exports.sendPushNotification = async (userId, title, body) => {
+exports.sendPushNotification = async (userId, title, body, data = {}) => {
   try {
     const user = await User.findById(userId);
-    if (!user || !user.fcmTokens || user.fcmTokens.length === 0) return;
+    if (!user || !user.fcmTokens || user.fcmTokens.length === 0) {
+      console.log(`[Push] No FCM tokens for user ${userId}`);
+      return;
+    }
+    console.log(`[Push] Sending to user ${userId}, tokens: ${user.fcmTokens.length}`);
 
     const invalidTokens = [];
 
@@ -13,9 +17,13 @@ exports.sendPushNotification = async (userId, title, body) => {
         await admin.messaging().send({
           token,
           notification: { title, body },
-          apns: { payload: { aps: { sound: 'default' } } },
+          data,
+          apns: {
+            payload: { aps: { sound: 'default' } },
+          },
         });
       } catch (error) {
+        console.error(`[Push] Send error for token ${token.substring(0, 20)}...:`, error.code || error.message);
         if (error.code === 'messaging/invalid-registration-token' ||
             error.code === 'messaging/registration-token-not-registered') {
           invalidTokens.push(token);
@@ -32,12 +40,25 @@ exports.sendPushNotification = async (userId, title, body) => {
   }
 };
 
-exports.sendGroupNotification = async (group, excludeUserId, title, body) => {
-  const memberIds = group.members
-    .filter(m => m.leftAt === null && m.user.toString() !== excludeUserId)
-    .map(m => m.user);
+exports.sendGroupNotification = async (group, excludeUserId, title, body, data = {}) => {
+  try {
+    const allIds = group.members
+      .filter(m => m.leftAt === null && m.user && m.user._id)
+      .map(m => ({ id: m.user._id.toString(), name: m.user.name || '?' }));
 
-  for (const uid of memberIds) {
-    await exports.sendPushNotification(uid, title, body);
+    console.log(`[Push] excludeUserId="${excludeUserId}" type=${typeof excludeUserId}`);
+    console.log(`[Push] All active members: ${allIds.map(m => `${m.name}(${m.id})`).join(', ')}`);
+
+    const memberIds = allIds
+      .filter(m => m.id !== excludeUserId)
+      .map(m => m.id);
+
+    console.log(`[Push] After exclude: ${memberIds.length} recipients`);
+
+    for (const uid of memberIds) {
+      await exports.sendPushNotification(uid, title, body, data);
+    }
+  } catch (error) {
+    console.error('[Push] sendGroupNotification error:', error.message);
   }
 };

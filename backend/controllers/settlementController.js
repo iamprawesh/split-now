@@ -1,6 +1,7 @@
 const Settlement = require('../models/Settlement');
 const Group = require('../models/Group');
 const Notification = require('../models/Notification');
+const { sendGroupNotification } = require('../services/notificationService');
 
 exports.createSettlement = async (req, res) => {
   try {
@@ -11,7 +12,7 @@ exports.createSettlement = async (req, res) => {
       return res.status(400).json({ error: 'from, to, and amount required.' });
     }
 
-    const group = await Group.findById(groupId);
+    const group = await Group.findById(groupId).populate('members.user');
     if (!group) {
       return res.status(404).json({ error: 'Group not found.' });
     }
@@ -44,7 +45,43 @@ exports.createSettlement = async (req, res) => {
       refId: settlement._id,
     });
 
+    sendGroupNotification(
+      group, from,
+      'Payment Settled',
+      `${fromUser.name} paid $${amount} to ${toUser.name} in ${group.name}`,
+      { groupId, type: 'settlement' }
+    ).catch(err => console.error('[Push] settlement notification failed:', err.message));
+
     return res.status(201).json(populated);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+exports.remindUser = async (req, res) => {
+  try {
+    const { id: groupId, userId } = req.params;
+    const group = await Group.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ error: 'Group not found.' });
+    }
+
+    const requester = group.members.find(
+      m => m.user.toString() === req.user.id && m.leftAt === null
+    );
+    if (!requester) {
+      return res.status(403).json({ error: 'Not a group member.' });
+    }
+
+    const { sendPushNotification } = require('../services/notificationService');
+    await sendPushNotification(
+      userId,
+      'Payment Reminder',
+      `${req.user.name || 'Someone'} reminded you to settle up in ${group.name}`,
+      { groupId, type: 'payment_reminder' }
+    );
+
+    return res.status(200).json({ message: 'Reminder sent.' });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }

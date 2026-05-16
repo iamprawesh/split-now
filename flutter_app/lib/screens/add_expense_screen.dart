@@ -274,7 +274,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
           children: [
             TextField(
               controller: _titleController,
-              autofocus: true,
+              autofocus: !_isEditing,
               decoration: const InputDecoration(
                 labelText: 'Title',
                 hintText: 'e.g. Dinner',

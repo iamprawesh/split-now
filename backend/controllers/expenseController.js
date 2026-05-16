@@ -2,6 +2,7 @@ const Expense = require('../models/Expense');
 const Group = require('../models/Group');
 const Notification = require('../models/Notification');
 const balanceService = require('../services/balanceService');
+const { sendGroupNotification } = require('../services/notificationService');
 
 exports.createExpense = async (req, res) => {
   try {
@@ -62,6 +63,15 @@ exports.createExpense = async (req, res) => {
         });
       }
     }
+
+    const payerName = payer?.name || 'Someone';
+    console.log(`[Expense] Sending push for expense "${title}" by user ${req.user.id} (${req.user.name})`);
+    sendGroupNotification(
+      group, req.user.id,
+      'New Expense',
+      `${payerName} added "${title}" in ${group.name}`,
+      { groupId, expenseId: expense._id.toString(), type: 'expense_added' }
+    ).catch(err => console.error('[Push] sendGroupNotification failed:', err.message));
 
     return res.status(201).json(populated);
   } catch (error) {

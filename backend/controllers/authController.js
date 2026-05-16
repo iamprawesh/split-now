@@ -83,12 +83,15 @@ exports.updateFcmToken = async (req, res) => {
       return res.status(400).json({ error: 'FCM token required.' });
     }
     const user = await User.findById(req.user.id);
-    if (!user.fcmTokens.includes(fcmToken)) {
+    const exists = user.fcmTokens.includes(fcmToken);
+    if (!exists) {
       user.fcmTokens.push(fcmToken);
       await user.save();
     }
+    console.log(`[Auth] FCM token ${exists ? 'already exists' : 'pushed'} for user ${req.user.id}`);
     return res.status(200).json({ message: 'FCM token updated.' });
   } catch (error) {
+    console.error('[Auth] FCM token update error:', error.message);
     return res.status(500).json({ error: error.message });
   }
 };

@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/user.dart';
 import '../services/api_service.dart';
@@ -56,6 +58,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> _registerFcmToken() async {
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token != null) {
+        await _api.post('/auth/fcm-token', data: {'fcmToken': token});
+      }
+    } catch (_) {}
+  }
+
   Future<void> signInWithGoogle() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
@@ -71,6 +82,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       final data = response.data;
       await _api.setToken(data['accessToken']);
+      unawaited(_registerFcmToken());
 
       state = AuthState(
         user: User.fromJson(data['user']),
@@ -96,6 +108,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       final data = response.data;
       await _api.setToken(data['accessToken']);
+      unawaited(_registerFcmToken());
 
       state = AuthState(
         user: User.fromJson(data['user']),
