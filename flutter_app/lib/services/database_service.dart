@@ -12,7 +12,7 @@ class DatabaseService {
 
   Future<Database> _initDatabase() async {
     final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'splitwise_cache.db');
+    final path = join(dbPath, 'split_now_cache.db');
 
     return openDatabase(
       path,

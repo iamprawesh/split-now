@@ -13,12 +13,43 @@ class AuthScreen extends ConsumerStatefulWidget {
 }
 
 class _AuthScreenState extends ConsumerState<AuthScreen> {
+  bool _dialogShowing = false;
+
+  void _showLoadingDialog() {
+    if (_dialogShowing) return;
+    _dialogShowing = true;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black38,
+      builder: (_) => const SignInLoadingDialog(),
+    ).then((_) => _dialogShowing = false);
+  }
+
+  void _dismissLoadingDialog() {
+    if (_dialogShowing && mounted) {
+      _dialogShowing = false;
+      Navigator.of(context, rootNavigator: true).pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
     ref.listen<AuthState>(authProvider, (prev, next) {
-      if (next.isAuthenticated) {
+      if (prev?.isLoading == false && next.isLoading) {
+        _showLoadingDialog();
+      } else if (prev?.isLoading == true && !next.isLoading) {
+        _dismissLoadingDialog();
+        if (next.isAuthenticated) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const DashboardScreen()),
+          );
+        }
+      } else if (next.isAuthenticated) {
+        _dismissLoadingDialog();
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const DashboardScreen()),
@@ -98,7 +129,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     ),
                     const SizedBox(height: 20),
                     const Text(
-                      'SplitEase',
+                      'Split Now',
                       style: TextStyle(
                         fontSize: 30,
                         fontWeight: FontWeight.w800,
@@ -167,25 +198,68 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       ),
                       child: Column(
                         children: [
-                          LoadingButton(
-                            isLoading: authState.isLoading,
-                            label: 'Continue with Google',
-                            onPressed:
-                                ref.read(authProvider.notifier).signInWithGoogle,
-                            backgroundColor: Colors.white,
-                            foregroundColor: textPrimary,
-                            borderSide: const BorderSide(
-                                color: Colors.black, width: 1.5),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 52,
+                            child: ElevatedButton(
+                              onPressed: authState.isLoading
+                                  ? null
+                                  : ref.read(authProvider.notifier).signInWithGoogle,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: textPrimary,
+                                elevation: 0,
+                                disabledBackgroundColor: Colors.white70,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: const BorderSide(
+                                      color: Colors.black, width: 1.5),
+                                ),
+                              ),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.g_mobiledata,
+                                      size: 24, color: textPrimary),
+                                  SizedBox(width: 8),
+                                  Text('Continue with Google',
+                                      style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600)),
+                                ],
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 12),
-                          LoadingButton(
-                            isLoading: authState.isLoading,
-                            label: 'Continue with Apple',
-                            loadingLabel: 'Signing in...',
-                            onPressed:
-                                ref.read(authProvider.notifier).signInWithApple,
-                            backgroundColor: textPrimary,
-                            icon: Icons.apple,
+                          SizedBox(
+                            width: double.infinity,
+                            height: 52,
+                            child: ElevatedButton(
+                              onPressed: authState.isLoading
+                                  ? null
+                                  : ref.read(authProvider.notifier).signInWithApple,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: textPrimary,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                disabledBackgroundColor:
+                                    textPrimary.withValues(alpha: 0.5),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.apple, size: 20),
+                                  SizedBox(width: 8),
+                                  Text('Continue with Apple',
+                                      style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600)),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
                       ),

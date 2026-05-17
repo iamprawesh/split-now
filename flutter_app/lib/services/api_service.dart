@@ -7,7 +7,7 @@ class ApiService {
 
   static const String _baseUrlKey = 'api_base_url';
   static const String _tokenKey = 'access_token';
-  static const String defaultBaseUrl = 'https://7bc2-2400-1a00-4b87-6bb6-9d66-d17b-bbb4-6eff.ngrok-free.app/api'; // Android emulator
+  static const String defaultBaseUrl = 'https://split-now-production.up.railway.app/api'; // Android emulator
 
   ApiService() {
     _dio = Dio(BaseOptions(

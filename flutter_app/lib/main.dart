@@ -24,17 +24,17 @@ const Color borderDark = Color(0xFF2D2D3A);
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  runApp(const ProviderScope(child: SplitwiseApp()));
+  runApp(const ProviderScope(child: SplitNowApp()));
 }
 
-class SplitwiseApp extends ConsumerStatefulWidget {
-  const SplitwiseApp({super.key});
+class SplitNowApp extends ConsumerStatefulWidget {
+  const SplitNowApp({super.key});
 
   @override
-  ConsumerState<SplitwiseApp> createState() => _SplitwiseAppState();
+  ConsumerState<SplitNowApp> createState() => _SplitNowAppState();
 }
 
-class _SplitwiseAppState extends ConsumerState<SplitwiseApp> {
+class _SplitNowAppState extends ConsumerState<SplitNowApp> {
   @override
   void initState() {
     super.initState();
@@ -52,7 +52,7 @@ class _SplitwiseAppState extends ConsumerState<SplitwiseApp> {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'SplitEase',
+      title: 'Split Now',
       themeMode: settings.themeMode,
       theme: ThemeData(
         useMaterial3: true,

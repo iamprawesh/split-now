@@ -104,7 +104,7 @@ class NotificationService {
       notification.body ?? '',
       const NotificationDetails(
         android: AndroidNotificationDetails(
-          'splitEase_expenses',
+          'split_now_expenses',
           'Expenses',
           channelDescription: 'Expense and group activity notifications',
           importance: Importance.high,

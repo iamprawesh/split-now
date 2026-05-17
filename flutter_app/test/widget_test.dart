@@ -10,7 +10,7 @@ import 'package:flutter_app/main.dart';
 
 void main() {
   testWidgets('App renders', (WidgetTester tester) async {
-    await tester.pumpWidget(const SplitwiseApp());
-    expect(find.byType(SplitwiseApp), findsOneWidget);
+    await tester.pumpWidget(const SplitNowApp());
+    expect(find.byType(SplitNowApp), findsOneWidget);
   });
 }

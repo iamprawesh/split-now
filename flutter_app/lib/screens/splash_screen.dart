@@ -148,7 +148,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                             ),
                             const SizedBox(height: 32),
                             const Text(
-                              'SplitEase',
+                              'Split Now',
                               style: TextStyle(
                                 fontSize: 38,
                                 fontWeight: FontWeight.w800,
