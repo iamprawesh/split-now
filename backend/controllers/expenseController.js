@@ -1,5 +1,6 @@
 const Expense = require('../models/Expense');
 const Group = require('../models/Group');
+const User = require('../models/User');
 const Notification = require('../models/Notification');
 const balanceService = require('../services/balanceService');
 const { sendGroupNotification } = require('../services/notificationService');
@@ -51,7 +52,7 @@ exports.createExpense = async (req, res) => {
       .populate('paidBy', 'name email avatar')
       .populate('splits.user', 'name email avatar');
 
-    const payer = await (require('../models/User')).findById(paidBy);
+    const payer = await User.findById(paidBy);
     for (const member of activeMembers) {
       const uid = member.user._id.toString();
       if (uid !== req.user.id) {

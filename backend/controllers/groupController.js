@@ -1,4 +1,4 @@
-const { nanoid } = require('nanoid');
+const { nanoid } = require('../utils');
 const Group = require('../models/Group');
 const User = require('../models/User');
 const Notification = require('../models/Notification');

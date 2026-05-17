@@ -1,7 +1,8 @@
 const Settlement = require('../models/Settlement');
 const Group = require('../models/Group');
+const User = require('../models/User');
 const Notification = require('../models/Notification');
-const { sendGroupNotification } = require('../services/notificationService');
+const { sendGroupNotification, sendPushNotification } = require('../services/notificationService');
 
 exports.createSettlement = async (req, res) => {
   try {
@@ -28,8 +29,8 @@ exports.createSettlement = async (req, res) => {
       .populate('from', 'name email avatar')
       .populate('to', 'name email avatar');
 
-    const fromUser = await (require('../models/User')).findById(from);
-    const toUser = await (require('../models/User')).findById(to);
+    const fromUser = await User.findById(from);
+    const toUser = await User.findById(to);
 
     const notifyMsg = `${fromUser.name} paid $${amount} to ${toUser.name} in ${group.name}`;
     await Notification.create({
@@ -73,7 +74,6 @@ exports.remindUser = async (req, res) => {
       return res.status(403).json({ error: 'Not a group member.' });
     }
 
-    const { sendPushNotification } = require('../services/notificationService');
     await sendPushNotification(
       userId,
       'Payment Reminder',

@@ -444,6 +444,67 @@ All endpoints except `POST /api/auth/firebase` require `Authorization: Bearer <j
 
 ---
 
+## Codebase Analysis
+
+### Backend Architecture
+
+```
+server.js
+  ├── helmet, cors, express.json, morgan (middleware stack)
+  ├── Swagger /api-docs
+  └── Routes
+       ├── /api/auth          → authController.js
+       ├── /api/groups         → groupController.js
+       ├── /api/groups/:id/expenses  → expenseController.js  (mergeParams)
+       ├── /api/groups/:id/settlements → settlementController.js  (mergeParams)
+       └── /api/notifications  → notificationController.js
+```
+
+**Auth flow**: Firebase ID token → backend verifies via Admin SDK → upserts User doc → returns JWT. Subsequent requests use `Bearer <jwt>` verified via `jsonwebtoken`. This decouples auth from Firebase per-request verification.
+
+**5 Mongoose models**: User (flat, no password), Group (embedded members[] + invite subdocs), Expense (embedded splits[]), Settlement (simple from→to→amount), Notification (5 type enums + refId). Embedded arrays avoid joins for reads.
+
+**Balance engine** (`balanceService.js`): Three functions — `calculateBalances()` (sums paid minus owed + settlement adjustments), `simplifyDebts()` (greedy matching largest debtor to largest creditor for minimal transactions), `calculateSplitAmounts()` (handles equal, parts, percentage, custom with rounding remainder added to last split).
+
+### Flutter Architecture
+
+```
+main.dart (Firebase init + ProviderScope + Material 3)
+  └── SplashScreen (animated logo, waits for auth check)
+       ├── AuthScreen (Google + Apple sign-in)
+       └── DashboardScreen (bottom nav)
+            ├── HomeScreen (group list + FABs)
+            └── ActivityScreen (notification feed)
+```
+
+**5 providers** (Riverpod StateNotifierProvider with copy-with state):
+- `AuthNotifier` — checkAuth, Google/Apple signInOut, FCM token registration
+- `GroupNotifier` — CRUD, invite/join, optimistic UI (shows group instantly, rolls back on failure)
+- `ExpenseNotifier` — CRUD, balances, settlements, optimistic UI
+- `NotificationNotifier` — list, unread count, mark read
+- `SettingsNotifier` — theme mode (light/dark/system) + currency (21 currencies), persisted to FlutterSecureStorage
+
+**13 screens**, key design patterns: shimmer loading skeletons, custom pull-to-refresh wrapper, loading overlays, `_PulseDot` and `_ThreeDotLoader` animations.
+
+**Optimistic updates**: CreateGroup and CreateExpense immediately show in UI before API response, roll back to previous state on failure.
+
+**Offline scaffolding**: SQLite with 3 tables (cached_groups, cached_expenses, pending_actions) — schema and methods exist but are **not wired** into provider layer. Known bug: `getCachedGroups()` casts data as `Map` but stores as string → runtime crash.
+
+### Notable Observations
+
+| Area | Finding |
+|---|---|
+| **Naming** | Backend uses "Splitwise", Flutter uses "SplitEase" — inconsistent |
+| **Expense schema** | Only `equal`/`custom` in enum, but service handles 4 types (`parts`, `percentage` also) |
+| **Validation** | `express-validator` installed but `validators/` is empty; all validation inline in controllers |
+| **Inline require** | `require('../models/User')` called inside controller methods instead of top-level imports |
+| **Widget reuse** | `widgets/` only has `loading_widgets.dart`; group cards, member tiles, expense items duplicated inline |
+| **Offline** | SQLite cache + pending queue scaffolded but never connected to providers |
+| **Tests** | Zero automated tests in either backend or Flutter |
+| **Web support** | `Firebase.initializeApp()` without `DefaultFirebaseOptions` will fail on web |
+
+---
+
 ## How to Run
 
 ### Backend
