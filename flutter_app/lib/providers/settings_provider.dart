@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/currency.dart';
 
 class SettingsState {
@@ -45,11 +46,29 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
 
   Future<void> loadSettings() async {
     try {
-      final saved = await _storage.read(key: _storageKey);
-      if (saved != null) {
-        final json = jsonDecode(saved) as Map<String, dynamic>;
-        state = SettingsState.fromJson(json);
+      final prefs = await SharedPreferences.getInstance();
+      final savedCurrencyCode = prefs.getString('selected_currency_code');
+
+      Currency savedCurrency;
+      if (savedCurrencyCode != null) {
+        savedCurrency = Currency.fromCode(savedCurrencyCode);
+      } else {
+        savedCurrency = const Currency(code: 'USD', name: 'US Dollar', symbol: '\$');
       }
+
+      try {
+        final saved = await _storage.read(key: _storageKey);
+        if (saved != null) {
+          final json = jsonDecode(saved) as Map<String, dynamic>;
+          state = SettingsState.fromJson(json);
+          if (savedCurrency.code != 'USD') {
+            state = state.copyWith(currency: savedCurrency);
+          }
+          return;
+        }
+      } catch (_) {}
+
+      state = SettingsState(currency: savedCurrency);
     } catch (_) {}
   }
 
@@ -70,6 +89,8 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> setCurrency(Currency currency) async {
     state = state.copyWith(currency: currency);
     await _persist();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selected_currency_code', currency.code);
   }
 }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/group.dart';
 import '../models/expense.dart';
+import '../models/expense_category.dart';
 import '../models/currency.dart';
 import '../providers/group_provider.dart';
 import '../providers/expense_provider.dart';
@@ -298,6 +299,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
 
   Widget _expenseCard(Expense exp, Group group, Currency currency, String userId) {
     final isAdminUser = _isAdmin(group, userId);
+    final category = ExpenseCategory.fromId(exp.category);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -330,25 +332,10 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
                   height: 42,
                   margin: const EdgeInsets.only(top: 2),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [accent, Color(0xFF7C80F5)],
-                    ),
+                    color: category.color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(11),
                   ),
-                  child: Center(
-                    child: Text(
-                      exp.paidByName.isNotEmpty
-                          ? exp.paidByName[0].toUpperCase()
-                          : '?',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
+                  child: Icon(category.icon, color: category.color, size: 22),
                 ),
                 const SizedBox(width: 12),
                 Expanded(

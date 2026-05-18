@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/group.dart';
 import '../models/expense.dart';
+import '../models/expense_category.dart';
 import '../providers/expense_provider.dart';
 import '../providers/settings_provider.dart';
 import '../main.dart';
@@ -35,6 +36,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   final Map<String, FocusNode> _splitFocusNodes = {};
   final Set<String> _lockedUserIds = {};
   bool _isAutoFilling = false;
+  ExpenseCategory _selectedCategory = ExpenseCategory.all.last;
+  bool _userEditedTitle = false;
+  bool _userSelectedCategory = false;
 
   @override
   void initState() {
@@ -49,6 +53,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       _paidBy = e.paidById;
       _selectedDate = e.date;
       _isEqualSplit = e.splitType == 'equal';
+      _selectedCategory = ExpenseCategory.fromId(e.category);
+      _userEditedTitle = e.title.isNotEmpty && e.title != _selectedCategory.defaultTitle;
+      _userSelectedCategory = e.category.isNotEmpty;
 
       _checked = {};
       _splitControllers = {};
@@ -76,6 +83,16 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         _splitFocusNodes[m.userId] = FocusNode();
       }
     }
+
+    _titleController.addListener(() {
+      _userEditedTitle = true;
+      if (!_userSelectedCategory) {
+        final detected = ExpenseCategory.detectCategory(_titleController.text);
+        if (detected.id != _selectedCategory.id) {
+          setState(() => _selectedCategory = detected);
+        }
+      }
+    });
 
     _amountController.addListener(() {
       _resetSplitState();
@@ -123,6 +140,100 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       }
     }
     _autoFillRemaining();
+  }
+
+  void _selectCategory() {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) {
+        final screenWidth = MediaQuery.of(ctx).size.width;
+        final crossAxisCount = screenWidth < 360 ? 3 : 4;
+        final itemWidth = (screenWidth - 32 - (crossAxisCount - 1) * 10) / crossAxisCount;
+        final itemHeight = itemWidth * 1.15;
+
+        return SafeArea(
+          child: Container(
+            constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.6),
+            padding: const EdgeInsets.only(top: 16, bottom: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    'Select Category',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: textPrimary,
+                    ),
+                  ),
+                ),
+                Flexible(
+                  child: GridView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    shrinkWrap: true,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      mainAxisSpacing: 10,
+                      crossAxisSpacing: 10,
+                      childAspectRatio: itemWidth / itemHeight,
+                    ),
+                    itemCount: ExpenseCategory.all.length,
+                    itemBuilder: (_, i) {
+                      final cat = ExpenseCategory.all[i];
+                      final isSelected = cat.id == _selectedCategory.id;
+                      return InkWell(
+                        onTap: () {
+                          setState(() {
+                            _selectedCategory = cat;
+                            _userSelectedCategory = true;
+                          });
+                          if (!_userEditedTitle) {
+                            _titleController.text = cat.defaultTitle;
+                          }
+                          Navigator.pop(ctx);
+                        },
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: cat.color.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(10),
+                                border: isSelected
+                                    ? Border.all(color: cat.color, width: 2)
+                                    : null,
+                              ),
+                              child: Icon(cat.icon, color: cat.color, size: 20),
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              cat.name,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 10,
+                                height: 1.1,
+                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                                color: isSelected ? cat.color : textPrimary,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   List<GroupMember> get _active =>
@@ -204,7 +315,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     final title = _titleController.text.trim();
     final description = _descController.text.trim();
     final amount = double.tryParse(_amountController.text.trim());
-    if (title.isEmpty || amount == null || amount <= 0) return;
+    if (amount == null || amount <= 0) return;
 
     final checkedMembers = _active.where((m) => _checked[m.userId] == true).toList();
     if (checkedMembers.isEmpty) return;
@@ -223,8 +334,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       ref.read(expenseProvider.notifier).updateExpense(
             widget.groupId,
             widget.expense!.id,
-            title: title,
+            title: title.isEmpty ? _selectedCategory.defaultTitle : title,
             description: description,
+            category: _selectedCategory.id,
             amount: amount,
             paidBy: _paidBy,
             splitType: _isEqualSplit ? 'equal' : 'custom',
@@ -234,8 +346,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     } else {
       ref.read(expenseProvider.notifier).createExpense(
             widget.groupId,
-            title: title,
+            title: title.isEmpty ? _selectedCategory.defaultTitle : title,
             description: description,
+            category: _selectedCategory.id,
             amount: amount,
             paidBy: _paidBy,
             splitType: _isEqualSplit ? 'equal' : 'custom',
@@ -272,13 +385,41 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextField(
-              controller: _titleController,
-              autofocus: !_isEditing,
-              decoration: const InputDecoration(
-                labelText: 'Title',
-                hintText: 'e.g. Dinner',
-              ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _titleController,
+                    autofocus: !_isEditing,
+                    decoration: const InputDecoration(
+                      labelText: 'Title',
+                      hintText: 'e.g. Dinner',
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                GestureDetector(
+                  onTap: _selectCategory,
+                  child: Container(
+                    width: 52,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: _selectedCategory.color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _selectedCategory.color.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Icon(
+                      _selectedCategory.icon,
+                      color: _selectedCategory.color,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             TextField(

@@ -30,6 +30,7 @@ class Expense {
   final String group;
   final String title;
   final String description;
+  final String category;
   final double amount;
   final String paidById;
   final String paidByName;
@@ -43,6 +44,7 @@ class Expense {
     required this.group,
     required this.title,
     required this.description,
+    required this.category,
     required this.amount,
     required this.paidById,
     required this.paidByName,
@@ -59,6 +61,7 @@ class Expense {
       group: json['group'] ?? '',
       title: json['title'] ?? json['description'] ?? '',
       description: json['description'] ?? '',
+      category: json['category'] ?? '',
       amount: (json['amount'] ?? 0).toDouble(),
       paidById: payer['_id'] ?? payer['id'] ?? json['paidBy'] ?? '',
       paidByName: payer['name'] ?? '',

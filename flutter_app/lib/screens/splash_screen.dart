@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/auth_provider.dart';
+import '../providers/settings_provider.dart';
 import '../main.dart';
 import 'auth_screen.dart';
 import 'dashboard_screen.dart';
+import 'currency_onboarding_screen.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -52,7 +55,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
-        _tryNavigate();
+        _checkOnboarding();
       }
     });
 
@@ -210,9 +213,42 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     );
   }
 
+  Future<void> _checkOnboarding() async {
+    if (_navigated || !mounted) return;
+    final prefs = await SharedPreferences.getInstance();
+    final isOnboarded = prefs.getBool('onboarding_done') ?? false;
+
+    if (!isOnboarded && mounted) {
+      Navigator.push(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => CurrencyOnboardingScreen(
+            onComplete: _continueToApp,
+          ),
+          transitionsBuilder: (_, anim, __, child) {
+            return FadeTransition(opacity: anim, child: child);
+          },
+          transitionDuration: const Duration(milliseconds: 300),
+        ),
+      ).then((_) {
+        if (mounted) {
+          ref.read(settingsProvider.notifier).loadSettings();
+          _tryNavigate();
+        }
+      });
+    } else if (mounted) {
+      ref.read(settingsProvider.notifier).loadSettings();
+      _tryNavigate();
+    }
+  }
+
+  void _continueToApp() {
+    ref.read(settingsProvider.notifier).loadSettings();
+    _tryNavigate();
+  }
+
   void _tryNavigate() {
     if (_navigated || !mounted) return;
-    if (!_controller.isCompleted) return;
 
     final authState = ref.read(authProvider);
     if (authState.isAuthenticated) {

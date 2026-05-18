@@ -8,8 +8,9 @@ const splitSchema = new mongoose.Schema({
 
 const expenseSchema = new mongoose.Schema({
   group: { type: mongoose.Schema.Types.ObjectId, ref: 'Group', required: true },
-  title: { type: String, required: true },
+  title: { type: String, required: false },
   description: { type: String, default: '' },
+  category: { type: String, default: '' },
   amount: { type: Number, required: true },
   paidBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   splitType: {

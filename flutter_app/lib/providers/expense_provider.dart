@@ -71,6 +71,7 @@ class ExpenseNotifier extends StateNotifier<ExpenseState> {
     String groupId, {
     required String title,
     required String description,
+    required String category,
     required double amount,
     required String paidBy,
     required String splitType,
@@ -92,6 +93,7 @@ class ExpenseNotifier extends StateNotifier<ExpenseState> {
       group: groupId,
       title: title,
       description: description,
+      category: category,
       amount: amount,
       paidById: paidBy,
       paidByName: payer?.name ?? '',
@@ -118,6 +120,7 @@ class ExpenseNotifier extends StateNotifier<ExpenseState> {
       await _api.post('/groups/$groupId/expenses', data: {
         'title': title,
         'description': description,
+        'category': category,
         'amount': amount,
         'paidBy': paidBy,
         'splitType': splitType,
@@ -182,6 +185,7 @@ class ExpenseNotifier extends StateNotifier<ExpenseState> {
     String expenseId, {
     required String title,
     required String description,
+    required String category,
     required double amount,
     required String paidBy,
     required String splitType,
@@ -196,6 +200,7 @@ class ExpenseNotifier extends StateNotifier<ExpenseState> {
       final response = await _api.put('/groups/$groupId/expenses/$expenseId', data: {
         'title': title,
         'description': description,
+        'category': category,
         'amount': amount,
         'paidBy': paidBy,
         'splitType': splitType,

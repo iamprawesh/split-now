@@ -7,10 +7,10 @@ const { sendGroupNotification } = require('../services/notificationService');
 
 exports.createExpense = async (req, res) => {
   try {
-    const { title, description, amount, paidBy, splitType, splits, date } = req.body;
+    const { title, description, category, amount, paidBy, splitType, splits, date } = req.body;
     const groupId = req.params.id;
 
-    if (!title || !amount || !paidBy || !splitType || !splits) {
+    if (!amount || !paidBy || !splitType || !splits) {
       return res.status(400).json({ error: 'Missing required fields.' });
     }
 
@@ -39,8 +39,9 @@ exports.createExpense = async (req, res) => {
 
     const expense = await Expense.create({
       group: groupId,
-      title,
+      title: title || category || 'Expense',
       description: description || '',
+      category: category || '',
       amount,
       paidBy,
       splitType,
@@ -111,7 +112,7 @@ exports.getExpense = async (req, res) => {
 
 exports.updateExpense = async (req, res) => {
   try {
-    const { title, description, amount, paidBy, splitType, splits, date } = req.body;
+    const { title, description, category, amount, paidBy, splitType, splits, date } = req.body;
     const expense = await Expense.findById(req.params.expenseId);
 
     if (!expense) {
@@ -147,6 +148,7 @@ exports.updateExpense = async (req, res) => {
 
     expense.title = title || expense.title;
     expense.description = description !== undefined ? description : expense.description;
+    expense.category = category !== undefined ? category : expense.category;
     expense.amount = finalAmount;
     expense.paidBy = paidBy || expense.paidBy;
     expense.splitType = finalSplitType;
