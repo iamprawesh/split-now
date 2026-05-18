@@ -51,6 +51,7 @@ app.use('/api/groups', require('./routes/groups'));
 app.use('/api/groups/:id/expenses', require('./routes/expenses'));
 app.use('/api/groups/:id/settlements', require('./routes/settlements'));
 app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/me/expenses', require('./routes/personalExpenses'));
 
 // Initialize and start
 const start = async () => {

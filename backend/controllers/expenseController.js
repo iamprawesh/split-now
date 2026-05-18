@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Expense = require('../models/Expense');
 const Group = require('../models/Group');
 const User = require('../models/User');
@@ -188,6 +189,37 @@ exports.deleteExpense = async (req, res) => {
 
     await Expense.findByIdAndDelete(req.params.expenseId);
     return res.status(200).json({ message: 'Expense deleted.' });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getGroupExpenseAnalytics = async (req, res) => {
+  try {
+    const groupId = new mongoose.Types.ObjectId(req.params.id);
+
+    const categoryTotals = await Expense.aggregate([
+      { $match: { group: groupId } },
+      { $group: { _id: '$category', total: { $sum: '$amount' }, count: { $sum: 1 } } },
+      { $sort: { total: -1 } },
+    ]);
+
+    const monthlyTotals = await Expense.aggregate([
+      { $match: { group: groupId } },
+      {
+        $group: {
+          _id: { year: { $year: '$date' }, month: { $month: '$date' } },
+          total: { $sum: '$amount' },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1 } },
+    ]);
+
+    const totalSpent = categoryTotals.reduce((sum, c) => sum + c.total, 0);
+    const totalExpenses = categoryTotals.reduce((sum, c) => sum + c.count, 0);
+
+    return res.status(200).json({ totalSpent, totalExpenses, categoryTotals, monthlyTotals });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }

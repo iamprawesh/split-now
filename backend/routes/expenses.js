@@ -73,6 +73,7 @@ router.post('/', expenseController.createExpense);
  *         description: Balances and suggested transactions
  */
 router.get('/balances', expenseController.getBalances); // note: defined before /:expenseId
+router.get('/analytics', expenseController.getGroupExpenseAnalytics);
 
 /**
  * @openapi
