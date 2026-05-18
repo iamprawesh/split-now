@@ -14,7 +14,7 @@ class SettingsState {
   );
 
   SettingsState({
-    this.themeMode = ThemeMode.system,
+    this.themeMode = ThemeMode.dark,
     this.currency = _defaultCurrency,
   });
 
@@ -32,7 +32,7 @@ class SettingsState {
 
   factory SettingsState.fromJson(Map<String, dynamic> json) {
     return SettingsState(
-      themeMode: ThemeMode.values[json['themeMode'] ?? ThemeMode.system.index],
+      themeMode: ThemeMode.values[json['themeMode'] ?? ThemeMode.dark.index],
       currency: Currency.fromCode(json['currency'] ?? 'USD'),
     );
   }
@@ -69,7 +69,9 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       } catch (_) {}
 
       state = SettingsState(currency: savedCurrency);
-    } catch (_) {}
+    } catch (e) {
+      print("object $e");
+    }
   }
 
   Future<void> _persist() async {

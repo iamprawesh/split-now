@@ -30,9 +30,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final groupState = ref.watch(groupProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: surfaceBg,
       appBar: AppBar(
         title: const Text('Groups'),
         actions: [
@@ -74,26 +74,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   : null,
             ),
             itemBuilder: (_) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'settings',
                 child: Row(
                   children: [
-                    Icon(Icons.settings_outlined, size: 18, color: textSecondary),
-                    SizedBox(width: 10),
+                    Icon(Icons.settings_outlined, size: 18,
+                        color: isDark ? textSecondaryDark : textSecondary),
+                    const SizedBox(width: 10),
                     Text('Settings',
-                        style: TextStyle(color: textPrimary)),
+                        style: TextStyle(
+                            color: isDark ? textPrimaryDark : textPrimary)),
                   ],
                 ),
               ),
               const PopupMenuDivider(),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'signout',
                 child: Row(
                   children: [
-                    Icon(Icons.logout, size: 18, color: textSecondary),
-                    SizedBox(width: 10),
+                    Icon(Icons.logout, size: 18,
+                        color: isDark ? textSecondaryDark : textSecondary),
+                    const SizedBox(width: 10),
                     Text('Sign Out',
-                        style: TextStyle(color: textPrimary)),
+                        style: TextStyle(
+                            color: isDark ? textPrimaryDark : textPrimary)),
                   ],
                 ),
               ),
@@ -102,10 +106,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
       body: groupState.isLoading
-          ? _skeletonList()
+          ? _skeletonList(isDark)
           : groupState.groups.isEmpty
-              ? _emptyState()
-              : _groupList(groupState),
+              ? _emptyState(isDark)
+              : _groupList(groupState, isDark),
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -134,7 +138,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _skeletonList() {
+  Widget _skeletonList(bool isDark) {
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
       itemCount: 6,
@@ -142,7 +146,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _emptyState() {
+  Widget _emptyState(bool isDark) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -160,12 +164,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   size: 36, color: accent),
             ),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'No groups yet',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
-                color: textPrimary,
+                color: isDark ? textPrimaryDark : textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -173,7 +177,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               'Create a group or join one\nwith an invite code.',
               style: TextStyle(
                 fontSize: 14,
-                color: textSecondary,
+                color: isDark ? textSecondaryDark : textSecondary,
                 height: 1.5,
               ),
               textAlign: TextAlign.center,
@@ -184,7 +188,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _groupList(GroupState groupState) {
+  Widget _groupList(GroupState groupState, bool isDark) {
     return PullToRefresh(
       onRefresh: () => ref.read(groupProvider.notifier).loadGroups(),
       child: ListView.builder(
@@ -195,7 +199,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           return Container(
             margin: const EdgeInsets.only(bottom: 10),
             child: Material(
-              color: Colors.white,
+              color: isDark ? cardBgDark : Colors.white,
               borderRadius: BorderRadius.circular(14),
               child: InkWell(
                 borderRadius: BorderRadius.circular(14),
@@ -237,25 +241,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           children: [
                             Text(
                               group.name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: textPrimary,
+                                color: isDark ? textPrimaryDark : textPrimary,
                               ),
                             ),
                             const SizedBox(height: 3),
                             Text(
                               '${group.activeMemberCount} ${group.activeMemberCount == 1 ? 'member' : 'members'}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 13,
-                                color: textSecondary,
+                                color: isDark ? textSecondaryDark : textSecondary,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const Icon(Icons.chevron_right,
-                          size: 20, color: textSecondary),
+                      Icon(Icons.chevron_right,
+                          size: 20, color: isDark ? textSecondaryDark : textSecondary),
                     ],
                   ),
                 ),

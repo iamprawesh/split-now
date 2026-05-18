@@ -1,3 +1,5 @@
+import '../services/app_constants.dart';
+
 class Currency {
   final String code;
   final String name;
@@ -12,11 +14,11 @@ class Currency {
   });
 
   String format(double amount) {
-    return '$symbol${amount.toStringAsFixed(decimalDigits)}';
+    return '$symbol\u2009${AppFormat.number(amount)}';
   }
 
   String formatWithCode(double amount) {
-    return '$code ${amount.toStringAsFixed(decimalDigits)}';
+    return '$code\u2009${AppFormat.number(amount)}';
   }
 
   Map<String, dynamic> toJson() => {

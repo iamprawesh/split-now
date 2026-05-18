@@ -77,13 +77,14 @@ class SkeletonGroupCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? cardBgDark : Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: borderLight, width: 0.5),
+        border: Border.all(color: isDark ? borderDark : borderLight, width: 0.5),
       ),
       child: Row(
         children: [
@@ -110,13 +111,14 @@ class SkeletonExpenseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? cardBgDark : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderLight, width: 0.5),
+        border: Border.all(color: isDark ? borderDark : borderLight, width: 0.5),
       ),
       child: Row(
         children: [
@@ -144,13 +146,14 @@ class SkeletonMemberTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? cardBgDark : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderLight, width: 0.5),
+        border: Border.all(color: isDark ? borderDark : borderLight, width: 0.5),
       ),
       child: Row(
         children: [
@@ -171,13 +174,14 @@ class SkeletonNotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? cardBgDark : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderLight, width: 0.5),
+        border: Border.all(color: isDark ? borderDark : borderLight, width: 0.5),
       ),
       child: Row(
         children: [
@@ -222,7 +226,7 @@ class LoadingOverlay extends StatelessWidget {
               opacity: isLoading ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 200),
               child: Container(
-                color: Colors.white.withValues(alpha: 0.6),
+                color: (Theme.of(context).brightness == Brightness.dark ? cardBgDark : Colors.white).withValues(alpha: 0.6),
                 child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -503,7 +507,7 @@ class _SignInLoadingDialogState extends State<SignInLoadingDialog>
                       margin: const EdgeInsets.symmetric(horizontal: 48),
                       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 32),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).brightness == Brightness.dark ? cardBgDark : Colors.white,
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
@@ -544,12 +548,12 @@ class _SignInLoadingDialogState extends State<SignInLoadingDialog>
                             ),
                           ),
                           const SizedBox(height: 28),
-                          const Text(
+                          Text(
                             'Signing you in...',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
-                              color: textPrimary,
+                              color: Theme.of(context).brightness == Brightness.dark ? textPrimaryDark : textPrimary,
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -557,7 +561,7 @@ class _SignInLoadingDialogState extends State<SignInLoadingDialog>
                             'Please wait',
                             style: TextStyle(
                               fontSize: 14,
-                              color: textSecondary.withValues(alpha: 0.7),
+                              color: (Theme.of(context).brightness == Brightness.dark ? textSecondaryDark : textSecondary).withValues(alpha: 0.7),
                             ),
                           ),
                           const SizedBox(height: 32),

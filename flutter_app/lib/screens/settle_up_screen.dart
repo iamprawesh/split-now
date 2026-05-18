@@ -63,6 +63,7 @@ class _SettleUpScreenState extends ConsumerState<SettleUpScreen> {
   Widget build(BuildContext context) {
     final expenseState = ref.watch(expenseProvider);
     final currency = ref.watch(currentCurrencyProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final relevant = widget.transactions
         .where((t) => t.from == widget.userId || t.to == widget.userId)
@@ -73,7 +74,6 @@ class _SettleUpScreenState extends ConsumerState<SettleUpScreen> {
         .toList();
 
     return Scaffold(
-      backgroundColor: surfaceBg,
       appBar: AppBar(
         title: const Text('Settle Up'),
         leading: IconButton(
@@ -88,13 +88,13 @@ class _SettleUpScreenState extends ConsumerState<SettleUpScreen> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
           children: [
             if (relevant.isNotEmpty) ...[
-              const Padding(
-                padding: EdgeInsets.only(left: 4, bottom: 12),
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 12),
                 child: Text('Your payments',
                     style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: textSecondary)),
+                        color: isDark ? textSecondaryDark : textSecondary)),
               ),
               ...relevant.map((tx) {
                 final isOwing = tx.from == widget.userId;
@@ -102,7 +102,7 @@ class _SettleUpScreenState extends ConsumerState<SettleUpScreen> {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   child: Material(
-                    color: Colors.white,
+                    color: isDark ? cardBgDark : Colors.white,
                     borderRadius: BorderRadius.circular(14),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -137,16 +137,16 @@ class _SettleUpScreenState extends ConsumerState<SettleUpScreen> {
                                       isOwing
                                           ? 'You owe $otherName'
                                           : '$otherName owes you',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                           fontSize: 15,
                                           fontWeight: FontWeight.w600,
-                                          color: textPrimary),
+                                          color: isDark ? textPrimaryDark : textPrimary),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(currency.format(tx.amount),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                             fontSize: 14,
-                                            color: textSecondary)),
+                                            color: isDark ? textSecondaryDark : textSecondary)),
                                   ],
                                 ),
                               ),
@@ -256,13 +256,13 @@ class _SettleUpScreenState extends ConsumerState<SettleUpScreen> {
             ],
             if (other.isNotEmpty) ...[
               const SizedBox(height: 8),
-              const Padding(
-                padding: EdgeInsets.only(left: 4, bottom: 12),
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 12),
                 child: Text('Other payments',
                     style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: textSecondary)),
+                        color: isDark ? textSecondaryDark : textSecondary)),
               ),
               ...other.map((tx) {
                 final from = _memberName(tx.from);
@@ -270,7 +270,7 @@ class _SettleUpScreenState extends ConsumerState<SettleUpScreen> {
                 return Container(
                   margin: const EdgeInsets.only(bottom: 6),
                   child: Material(
-                    color: Colors.white,
+                    color: isDark ? cardBgDark : Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
@@ -278,14 +278,15 @@ class _SettleUpScreenState extends ConsumerState<SettleUpScreen> {
                       child: Row(
                         children: [
                           Text('$from → $to',
-                              style: const TextStyle(
-                                  fontSize: 14, color: textSecondary)),
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  color: isDark ? textSecondaryDark : textSecondary)),
                           const Spacer(),
                           Text(currency.format(tx.amount),
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontWeight: FontWeight.w600,
                                   fontSize: 14,
-                                  color: textPrimary)),
+                                  color: isDark ? textPrimaryDark : textPrimary)),
                         ],
                       ),
                     ),
@@ -294,17 +295,18 @@ class _SettleUpScreenState extends ConsumerState<SettleUpScreen> {
               }),
             ],
             if (relevant.isEmpty && other.isEmpty)
-              const Padding(
-                padding: EdgeInsets.only(top: 60),
+              Padding(
+                padding: const EdgeInsets.only(top: 60),
                 child: Center(
                   child: Column(
                     children: [
-                      Icon(Icons.check_circle_outline,
+                      const Icon(Icons.check_circle_outline,
                           size: 48, color: greenAccent),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                       Text('No payments to show',
                           style: TextStyle(
-                              fontSize: 16, color: textSecondary)),
+                              fontSize: 16,
+                              color: isDark ? textSecondaryDark : textSecondary)),
                     ],
                   ),
                 ),
@@ -341,7 +343,8 @@ class _SettleUpScreenState extends ConsumerState<SettleUpScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.close, color: textSecondary),
+              leading: Icon(Icons.close,
+                  color: Theme.of(context).brightness == Brightness.dark ? textSecondaryDark : textSecondary),
               title: const Text('Cancel'),
               onTap: () => Navigator.pop(context),
             ),

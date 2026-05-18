@@ -49,7 +49,6 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
     final groupState = ref.watch(groupProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(_isEditing ? 'Edit Group' : 'New Group'),
         leading: IconButton(

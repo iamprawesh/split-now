@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/expense.dart';
+import '../models/my_expense.dart';
 import '../services/api_service.dart';
 import 'auth_provider.dart';
 import 'group_provider.dart';
@@ -13,6 +14,9 @@ class ExpenseState {
   final BalanceData? balanceData;
   final List<Settlement> settlements;
   final String? error;
+  final PersonalExpenseAnalytics? analytics;
+  final bool analyticsLoading;
+  final String? analyticsError;
 
   ExpenseState({
     this.isLoading = false,
@@ -23,6 +27,9 @@ class ExpenseState {
     this.balanceData,
     this.settlements = const [],
     this.error,
+    this.analytics,
+    this.analyticsLoading = false,
+    this.analyticsError,
   });
 
   ExpenseState copyWith({
@@ -34,6 +41,9 @@ class ExpenseState {
     BalanceData? balanceData,
     List<Settlement>? settlements,
     String? error,
+    PersonalExpenseAnalytics? analytics,
+    bool? analyticsLoading,
+    String? analyticsError,
   }) {
     return ExpenseState(
       isLoading: isLoading ?? this.isLoading,
@@ -44,6 +54,9 @@ class ExpenseState {
       balanceData: balanceData ?? this.balanceData,
       settlements: settlements ?? this.settlements,
       error: error,
+      analytics: analytics ?? this.analytics,
+      analyticsLoading: analyticsLoading ?? this.analyticsLoading,
+      analyticsError: analyticsError ?? this.analyticsError,
     );
   }
 }
@@ -53,6 +66,19 @@ class ExpenseNotifier extends StateNotifier<ExpenseState> {
   final Ref _ref;
 
   ExpenseNotifier(this._api, this._ref) : super(ExpenseState());
+
+  Future<void> loadGroupAnalytics(String groupId) async {
+    state = state.copyWith(analyticsLoading: true, analyticsError: null);
+    try {
+      final response = await _api.get('/groups/$groupId/expenses/analytics');
+      state = state.copyWith(
+        analytics: PersonalExpenseAnalytics.fromJson(response.data),
+        analyticsLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(analyticsLoading: false, analyticsError: e.toString());
+    }
+  }
 
   Future<void> loadExpenses(String groupId) async {
     state = state.copyWith(isLoading: true);
@@ -128,6 +154,7 @@ class ExpenseNotifier extends StateNotifier<ExpenseState> {
         if (date != null) 'date': date,
       });
       await loadExpenses(groupId);
+      loadGroupAnalytics(groupId);
     } catch (e) {
       state = state.copyWith(
         expenses: state.expenses.where((e) => e.id != tempId).toList(),
@@ -212,6 +239,7 @@ class ExpenseNotifier extends StateNotifier<ExpenseState> {
         expenses: state.expenses.map((e) => e.id == expenseId ? updated : e).toList(),
         isCreating: false,
       );
+      _refreshAnalytics(groupId);
     } catch (e) {
       state = state.copyWith(
         isCreating: false,
@@ -221,12 +249,22 @@ class ExpenseNotifier extends StateNotifier<ExpenseState> {
     }
   }
 
+  Future<void> _refreshAnalytics(String groupId) async {
+    try {
+      final response = await _api.get('/groups/$groupId/expenses/analytics');
+      state = state.copyWith(
+        analytics: PersonalExpenseAnalytics.fromJson(response.data),
+      );
+    } catch (_) {}
+  }
+
   Future<void> deleteExpense(String groupId, String expenseId) async {
     state = state.copyWith(isDeleting: true);
     try {
       await _api.delete('/groups/$groupId/expenses/$expenseId');
       state = state.copyWith(isDeleting: false);
       await loadExpenses(groupId);
+      _refreshAnalytics(groupId);
     } catch (e) {
       state = state.copyWith(isDeleting: false, error: e.toString());
     }

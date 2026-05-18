@@ -52,6 +52,7 @@ dependencies:
   flutter_local_notifications: ^18.0.1
   connectivity_plus: ^6.1.1
   speech_to_text: ^7.3.0
+  fl_chart: ^0.70.2
 
 dev_dependencies:
   flutter_test:

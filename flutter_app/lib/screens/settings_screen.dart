@@ -11,9 +11,9 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
     final notifier = ref.read(settingsProvider.notifier);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Settings'),
         leading: IconButton(
@@ -24,40 +24,41 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
-          _sectionHeader('Appearance'),
+          _sectionHeader('Appearance', isDark),
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isDark ? cardBgDark : Colors.white,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: borderLight, width: 0.5),
+              border: Border.all(color: isDark ? borderDark : borderLight, width: 0.5),
             ),
             child: Column(
               children: [
                 _themeOption(context, ref, settings, notifier,
                     ThemeMode.light, Icons.light_mode_outlined, 'Light'),
-                _divider(),
+                _divider(isDark),
                 _themeOption(context, ref, settings, notifier,
                     ThemeMode.dark, Icons.dark_mode_outlined, 'Dark'),
-                _divider(),
+                _divider(isDark),
                 _themeOption(context, ref, settings, notifier,
                     ThemeMode.system, Icons.settings_brightness_outlined, 'System'),
               ],
             ),
           ),
           const SizedBox(height: 28),
-          _sectionHeader('Currency'),
+          _sectionHeader('Currency', isDark),
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isDark ? cardBgDark : Colors.white,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: borderLight, width: 0.5),
+              border: Border.all(color: isDark ? borderDark : borderLight, width: 0.5),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<Currency>(
                 value: settings.currency,
                 isExpanded: true,
-                icon: const Icon(Icons.expand_more, color: textSecondary),
+                icon: Icon(Icons.expand_more,
+                    color: isDark ? textSecondaryDark : textSecondary),
                 items: Currency.all.map((c) {
                   return DropdownMenuItem(
                     value: c,
@@ -88,17 +89,17 @@ class SettingsScreen extends ConsumerWidget {
                             children: [
                               Text(
                                 '${c.name} (${c.code})',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w500,
-                                  color: textPrimary,
+                                  color: isDark ? textPrimaryDark : textPrimary,
                                 ),
                               ),
                               Text(
                                 '${c.symbol}1,234.56',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
-                                  color: textSecondary,
+                                  color: isDark ? textSecondaryDark : textSecondary,
                                 ),
                               ),
                             ],
@@ -119,15 +120,15 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _sectionHeader(String title) {
+  Widget _sectionHeader(String title, bool isDark) {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 10),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w600,
-          color: textSecondary,
+          color: isDark ? textSecondaryDark : textSecondary,
           letterSpacing: 0.3,
         ),
       ),
@@ -143,6 +144,7 @@ class SettingsScreen extends ConsumerWidget {
     IconData icon,
     String label,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final selected = settings.themeMode == mode;
     return InkWell(
       onTap: () => notifier.setThemeMode(mode),
@@ -150,15 +152,16 @@ class SettingsScreen extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: textSecondary),
+            Icon(icon, size: 20,
+                color: isDark ? textSecondaryDark : textSecondary),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
-                  color: textPrimary,
+                  color: isDark ? textPrimaryDark : textPrimary,
                 ),
               ),
             ),
@@ -167,7 +170,7 @@ class SettingsScreen extends ConsumerWidget {
                   ? Icons.radio_button_checked
                   : Icons.radio_button_unchecked,
               size: 20,
-              color: selected ? accent : borderLight,
+              color: selected ? accent : (isDark ? borderDark : borderLight),
             ),
           ],
         ),
@@ -175,11 +178,11 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _divider() {
+  Widget _divider(bool isDark) {
     return Divider(
       height: 1,
       thickness: 0.5,
-      color: borderLight,
+      color: isDark ? borderDark : borderLight,
       indent: 16,
       endIndent: 16,
     );

@@ -29,12 +29,12 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
   @override
   Widget build(BuildContext context) {
     final groupState = ref.watch(groupProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return LoadingOverlay(
       isLoading: groupState.isJoining,
       message: 'Joining group...',
       child: Scaffold(
-        backgroundColor: Colors.white,
         appBar: AppBar(
           title: const Text('Join Group'),
           leading: IconButton(
@@ -42,12 +42,12 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
             onPressed: () => Navigator.pop(context),
           ),
         ),
-        body: _scanMode ? _scanner() : _codeInput(groupState),
+        body: _scanMode ? _scanner(isDark) : _codeInput(groupState, isDark),
       ),
     );
   }
 
-  Widget _codeInput(GroupState groupState) {
+  Widget _codeInput(GroupState groupState, bool isDark) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
       child: Column(
@@ -63,14 +63,15 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
                 size: 32, color: accent),
           ),
           const SizedBox(height: 20),
-          const Text('Enter invite code',
+          Text('Enter invite code',
               style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
-                  color: textPrimary)),
+                  color: isDark ? textPrimaryDark : textPrimary)),
           const SizedBox(height: 6),
           Text('Paste the code shared with you.',
-              style: TextStyle(fontSize: 13, color: textSecondary)),
+              style: TextStyle(fontSize: 13,
+                  color: isDark ? textSecondaryDark : textSecondary)),
           const SizedBox(height: 24),
           TextField(
             controller: _codeController,
@@ -94,7 +95,8 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text('or', style: TextStyle(
-                    fontSize: 13, color: textSecondary)),
+                    fontSize: 13,
+                    color: isDark ? textSecondaryDark : textSecondary)),
               ),
               const Expanded(child: Divider()),
             ],
@@ -119,7 +121,7 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
     );
   }
 
-  Widget _scanner() {
+  Widget _scanner(bool isDark) {
     return Column(
       children: [
         Expanded(
@@ -148,15 +150,15 @@ class _JoinGroupScreenState extends ConsumerState<JoinGroupScreen> {
           ),
         ),
         Container(
-          color: Colors.white,
+          color: isDark ? cardBgDark : Colors.white,
           padding: const EdgeInsets.all(24),
           child: Column(
             children: [
-              const Text('Point camera at QR code',
+              Text('Point camera at QR code',
                   style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
-                      color: textPrimary)),
+                      color: isDark ? textPrimaryDark : textPrimary)),
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,

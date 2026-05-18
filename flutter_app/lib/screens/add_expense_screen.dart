@@ -5,6 +5,7 @@ import '../models/expense.dart';
 import '../models/expense_category.dart';
 import '../providers/expense_provider.dart';
 import '../providers/settings_provider.dart';
+import '../services/app_constants.dart';
 import '../main.dart';
 import 'package:intl/intl.dart';
 
@@ -49,7 +50,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       final e = widget.expense!;
       _titleController = TextEditingController(text: e.title);
       _descController = TextEditingController(text: e.description);
-      _amountController = TextEditingController(text: e.amount.toStringAsFixed(2));
+      _amountController = TextEditingController(text: AppFormat.number(e.amount));
       _paidBy = e.paidById;
       _selectedDate = e.date;
       _isEqualSplit = e.splitType == 'equal';
@@ -63,7 +64,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         final split = e.splits.where((s) => s.userId == m.userId).firstOrNull;
         _checked[m.userId] = split != null;
         _splitControllers[m.userId] = TextEditingController(
-          text: split != null ? split.amount.toStringAsFixed(2) : '',
+          text: split != null ? AppFormat.number(split.amount) : '',
         );
         _splitFocusNodes[m.userId] = FocusNode();
       }
@@ -158,14 +159,14 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 12),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
                   child: Text(
                     'Select Category',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: textPrimary,
+                      color: Theme.of(ctx).brightness == Brightness.dark ? textPrimaryDark : textPrimary,
                     ),
                   ),
                 ),
@@ -217,7 +218,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                                 fontSize: 10,
                                 height: 1.1,
                                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                                color: isSelected ? cat.color : textPrimary,
+                                color: isSelected ? cat.color : (Theme.of(ctx).brightness == Brightness.dark ? textPrimaryDark : textPrimary),
                               ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
@@ -277,7 +278,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     _isAutoFilling = true;
     final share = double.parse((remaining / autoMembers.length).toStringAsFixed(2));
     for (final m in autoMembers) {
-      _splitControllers[m.userId]!.text = share.toStringAsFixed(2);
+      _splitControllers[m.userId]!.text = AppFormat.number(share);
     }
     _isAutoFilling = false;
     setState(() {});
@@ -313,7 +314,6 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
   void _submit() {
     final title = _titleController.text.trim();
-    final description = _descController.text.trim();
     final amount = double.tryParse(_amountController.text.trim());
     if (amount == null || amount <= 0) return;
 
@@ -335,7 +335,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
             widget.groupId,
             widget.expense!.id,
             title: title.isEmpty ? _selectedCategory.defaultTitle : title,
-            description: description,
+            description: '',
             category: _selectedCategory.id,
             amount: amount,
             paidBy: _paidBy,
@@ -347,7 +347,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       ref.read(expenseProvider.notifier).createExpense(
             widget.groupId,
             title: title.isEmpty ? _selectedCategory.defaultTitle : title,
-            description: description,
+            description: '',
             category: _selectedCategory.id,
             amount: amount,
             paidBy: _paidBy,
@@ -363,9 +363,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   Widget build(BuildContext context) {
     final currency = ref.watch(currentCurrencyProvider);
     final active = _active;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(_isEditing ? 'Edit Expense' : 'Add Expense'),
         leading: IconButton(
@@ -380,208 +380,286 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
             ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _titleController,
-                    autofocus: !_isEditing,
-                    decoration: const InputDecoration(
-                      labelText: 'Title',
-                      hintText: 'e.g. Dinner',
-                    ),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _titleController,
+                          autofocus: !_isEditing,
+                          decoration: const InputDecoration(
+                            labelText: 'Title',
+                            hintText: 'e.g. Dinner',
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      GestureDetector(
+                        onTap: _selectCategory,
+                        child: Container(
+                          width: 52,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: _selectedCategory.color.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: _selectedCategory.color.withValues(alpha: 0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Icon(
+                            _selectedCategory.icon,
+                            color: _selectedCategory.color,
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(width: 12),
-                GestureDetector(
-                  onTap: _selectCategory,
-                  child: Container(
-                    width: 52,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: _selectedCategory.color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: _selectedCategory.color.withValues(alpha: 0.3),
-                        width: 1,
+                  const SizedBox(height: 16),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: TextField(
+                          controller: _amountController,
+                          decoration: InputDecoration(
+                            labelText: 'Total Amount',
+                            prefixText: '${currency.symbol} ',
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 5,
+                        child: DropdownButtonFormField<String>(
+                          value: _paidBy,
+                          isExpanded: true,
+                          decoration: const InputDecoration(labelText: 'Paid by'),
+                          items: active
+                              .map((m) => DropdownMenuItem<String>(
+                                    value: m.userId,
+                                    child: Text(m.name,
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1),
+                                  ))
+                              .toList(),
+                          onChanged: (v) => setState(() => _paidBy = v!),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  InkWell(
+                    onTap: _pickDate,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: 200,
+                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                      decoration: BoxDecoration(
+                        color: isDark ? surfaceBgDark : surfaceBg,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark ? borderDark : borderLight,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.calendar_today,
+                              size: 16, color: isDark ? textSecondaryDark : textSecondary),
+                          const SizedBox(width: 10),
+                          Text(
+                            DateFormat('MMM dd, yyyy').format(_selectedDate),
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                              color: isDark ? textPrimaryDark : textPrimary,
+                            ),
+                          ),
+                          const Spacer(),
+                          Icon(Icons.arrow_drop_down,
+                              color: isDark ? textSecondaryDark : textSecondary),
+                        ],
                       ),
                     ),
-                    child: Icon(
-                      _selectedCategory.icon,
-                      color: _selectedCategory.color,
-                      size: 24,
-                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _descController,
-              decoration: const InputDecoration(
-                labelText: 'Description (optional)',
-                hintText: 'Add details...',
-              ),
-              maxLines: 2,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _amountController,
-              decoration: InputDecoration(
-                labelText: 'Total Amount',
-                prefixText: '${currency.symbol} ',
-              ),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              value: _paidBy,
-              decoration: const InputDecoration(labelText: 'Paid by'),
-              items: active
-                  .map((m) => DropdownMenuItem(
-                        value: m.userId,
-                        child: Text(m.name),
-                      ))
-                  .toList(),
-              onChanged: (v) => setState(() => _paidBy = v!),
-            ),
-            const SizedBox(height: 16),
-            InkWell(
-              onTap: _pickDate,
-              child: InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'Date',
-                  suffixIcon: Icon(Icons.calendar_today, size: 18),
-                ),
-                child: Text(
-                  DateFormat('MMM dd, yyyy').format(_selectedDate),
-                  style: const TextStyle(fontSize: 16, color: textPrimary),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Text('Split Type',
-                style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: textPrimary)),
-            const SizedBox(height: 10),
-            SegmentedButton<bool>(
-              segments: const [
-                ButtonSegment(value: true, label: Text('Equally')),
-                ButtonSegment(value: false, label: Text('By Amount')),
-              ],
-              selected: {_isEqualSplit},
-              onSelectionChanged: (v) {
-                setState(() => _isEqualSplit = v.first);
-                _resetSplitState();
-                if (!v.first) _autoFillRemaining();
-              },
-              style: ButtonStyle(
-                backgroundColor: WidgetStateProperty.resolveWith((states) {
-                  if (states.contains(WidgetState.selected)) return accent;
-                  return Colors.transparent;
-                }),
-                foregroundColor: WidgetStateProperty.resolveWith((states) {
-                  if (states.contains(WidgetState.selected)) return Colors.white;
-                  return textPrimary;
-                }),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text('Split Among',
-                style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: textPrimary)),
-            const SizedBox(height: 4),
-            const Text('Uncheck members not part of this expense',
-                style: TextStyle(fontSize: 12, color: textSecondary)),
-            const SizedBox(height: 10),
-            ...active.map((m) {
-              final checked = _checked[m.userId] ?? true;
-              final ctrl = _splitControllers[m.userId]!;
-              final total = double.tryParse(_amountController.text.trim()) ?? 0.0;
-              final checkedCount = active.where((x) => _checked[x.userId] == true).length;
-              final equalAmount = checkedCount > 0 ? total / checkedCount : 0.0;
-
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(
-                  children: [
-                    Checkbox(
-                      value: checked,
-                      activeColor: accent,
-                      onChanged: (v) {
-                        setState(() => _checked[m.userId] = v!);
-                        if (!v!) _lockedUserIds.remove(m.userId);
-                        _autoFillRemaining();
-                      },
+                  const SizedBox(height: 6),
+                  Divider(color: isDark ? borderDark : borderLight, height: 1),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Icon(Icons.people_outline, size: 18,
+                          color: isDark ? textSecondaryDark : textSecondary),
+                      const SizedBox(width: 8),
+                      Text('Split',
+                          style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? textPrimaryDark : textPrimary)),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: isDark ? surfaceBgDark : surfaceBg,
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundColor: accent.withValues(alpha: 0.08),
-                      backgroundImage: m.avatar.isNotEmpty
-                          ? NetworkImage(m.avatar)
-                          : null,
-                      child: m.avatar.isEmpty
-                          ? Text(m.name[0].toUpperCase(),
-                              style: const TextStyle(
-                                  color: accent,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13))
-                          : null,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(m.name,
-                          style: const TextStyle(
-                              fontSize: 15, color: textPrimary)),
-                    ),
-                    SizedBox(
-                      width: 100,
-                      child: _isEqualSplit
-                          ? Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 14),
-                              decoration: BoxDecoration(
-                                color: borderLight.withValues(alpha: 0.3),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                checked
-                                    ? currency.format(equalAmount)
-                                    : '—',
-                                textAlign: TextAlign.right,
-                                style: const TextStyle(
-                                    fontSize: 14, color: textSecondary),
-                              ),
-                            )
-                          : TextField(
-                              controller: ctrl,
-                              focusNode: _splitFocusNodes[m.userId],
-                              decoration: InputDecoration(
-                                hintText: currency.symbol,
-                                isDense: true,
-                                contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 12),
-                              ),
-                              keyboardType: TextInputType.number,
-                              enabled: checked,
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: SegmentedButton<bool>(
+                            segments: const [
+                              ButtonSegment(value: true, label: Text('Equally')),
+                              ButtonSegment(value: false, label: Text('By Amount')),
+                            ],
+                            selected: {_isEqualSplit},
+                            onSelectionChanged: (v) {
+                              setState(() => _isEqualSplit = v.first);
+                              _resetSplitState();
+                              if (!v.first) _autoFillRemaining();
+                            },
+                            style: ButtonStyle(
+                              backgroundColor: WidgetStateProperty.resolveWith((states) {
+                                if (states.contains(WidgetState.selected)) return accent;
+                                return Colors.transparent;
+                              }),
+                              foregroundColor: WidgetStateProperty.resolveWith((states) {
+                                if (states.contains(WidgetState.selected)) return Colors.white;
+                                return isDark ? textPrimaryDark : textPrimary;
+                              }),
                             ),
-                    ),
-                  ],
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Divider(color: isDark ? borderDark : borderLight, height: 1, indent: 8, endIndent: 8),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+                          child: Row(
+                            children: [
+                              Text('Members',
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: isDark ? textSecondaryDark : textSecondary)),
+                              const Spacer(),
+                              Text('Amount',
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: isDark ? textSecondaryDark : textSecondary)),
+                            ],
+                          ),
+                        ),
+                        ...active.map((m) {
+                    final checked = _checked[m.userId] ?? true;
+                    final ctrl = _splitControllers[m.userId]!;
+                    final total = double.tryParse(_amountController.text.trim()) ?? 0.0;
+                    final checkedCount = active.where((x) => _checked[x.userId] == true).length;
+                    final equalAmount = checkedCount > 0 ? total / checkedCount : 0.0;
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Row(
+                        children: [
+                          Checkbox(
+                            value: checked,
+                            activeColor: accent,
+                            onChanged: (v) {
+                              setState(() => _checked[m.userId] = v!);
+                              if (!v!) _lockedUserIds.remove(m.userId);
+                              _autoFillRemaining();
+                            },
+                          ),
+                          CircleAvatar(
+                            radius: 16,
+                            backgroundColor: accent.withValues(alpha: 0.08),
+                            backgroundImage: m.avatar.isNotEmpty
+                                ? NetworkImage(m.avatar)
+                                : null,
+                            child: m.avatar.isEmpty
+                                ? Text(m.name[0].toUpperCase(),
+                                    style: const TextStyle(
+                                        color: accent,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 13))
+                                : null,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(m.name,
+                                style: TextStyle(
+                                    fontSize: 15,
+                                    color: isDark ? textPrimaryDark : textPrimary)),
+                          ),
+                          SizedBox(
+                            width: 100,
+                            child: _isEqualSplit
+                                ? Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 14),
+                                    decoration: BoxDecoration(
+                                      color: (isDark ? borderDark : borderLight).withValues(alpha: 0.3),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      checked
+                                          ? currency.format(equalAmount)
+                                          : '—',
+                                      textAlign: TextAlign.right,
+                                      style: TextStyle(
+                                          fontSize: 14,
+                                          color: isDark ? textSecondaryDark : textSecondary),
+                                    ),
+                                  )
+                                : TextField(
+                                    controller: ctrl,
+                                    focusNode: _splitFocusNodes[m.userId],
+                                    decoration: InputDecoration(
+                                      hintText: currency.symbol,
+                                      isDense: true,
+                                      contentPadding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 12),
+                                    ),
+                                    keyboardType: TextInputType.number,
+                                    enabled: checked,
+                                  ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+          Container(
+            padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+            decoration: BoxDecoration(
+              color: isDark ? cardBgDark : Colors.white,
+              border: Border(
+                top: BorderSide(
+                  color: isDark ? borderDark : borderLight,
+                  width: 0.5,
                 ),
-              );
-            }),
-            const SizedBox(height: 24),
-            SizedBox(
+              ),
+            ),
+            child: SizedBox(
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
@@ -589,8 +667,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                 child: Text(_isEditing ? 'Update Expense' : 'Add Expense'),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

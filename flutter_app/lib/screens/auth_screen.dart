@@ -36,6 +36,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? cardBgDark : Colors.white;
 
     ref.listen<AuthState>(authProvider, (prev, next) {
       if (prev?.isLoading == false && next.isLoading) {
@@ -59,15 +61,21 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFEEF0FF),
-              Color(0xFFF8F9FA),
-              Color(0xFFFFFFFF),
-            ],
+            colors: isDark
+                ? [
+                    surfaceBgDark,
+                    surfaceBgDark,
+                    cardBgDark,
+                  ]
+                : [
+                    const Color(0xFFEEF0FF),
+                    const Color(0xFFF8F9FA),
+                    const Color(0xFFFFFFFF),
+                  ],
           ),
         ),
         child: SafeArea(
@@ -128,12 +136,12 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    const Text(
+                    Text(
                       'Split Now',
                       style: TextStyle(
                         fontSize: 30,
                         fontWeight: FontWeight.w800,
-                        color: textPrimary,
+                        color: isDark ? textPrimaryDark : textPrimary,
                         letterSpacing: -0.5,
                       ),
                     ),
@@ -142,7 +150,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       'Split expenses with friends, easily.',
                       style: TextStyle(
                         fontSize: 14,
-                        color: textSecondary.withValues(alpha: 0.8),
+                        color: (isDark ? textSecondaryDark : textSecondary).withValues(alpha: 0.8),
                         height: 1.4,
                       ),
                     ),
@@ -186,7 +194,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 20, vertical: 16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: cardColor,
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
@@ -206,23 +214,23 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                   ? null
                                   : ref.read(authProvider.notifier).signInWithGoogle,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: textPrimary,
+                                backgroundColor: cardColor,
+                                foregroundColor: isDark ? textPrimaryDark : textPrimary,
                                 elevation: 0,
-                                disabledBackgroundColor: Colors.white70,
+                                disabledBackgroundColor: cardColor.withValues(alpha: 0.7),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  side: const BorderSide(
-                                      color: Colors.black, width: 1.5),
+                                  side: BorderSide(
+                                      color: isDark ? borderDark : Colors.black, width: 1.5),
                                 ),
                               ),
-                              child: const Row(
+                              child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(Icons.g_mobiledata,
-                                      size: 24, color: textPrimary),
-                                  SizedBox(width: 8),
-                                  Text('Continue with Google',
+                                      size: 24, color: isDark ? textPrimaryDark : textPrimary),
+                                  const SizedBox(width: 8),
+                                  const Text('Continue with Google',
                                       style: TextStyle(
                                           fontSize: 15,
                                           fontWeight: FontWeight.w600)),
@@ -239,11 +247,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                   ? null
                                   : ref.read(authProvider.notifier).signInWithApple,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: textPrimary,
-                                foregroundColor: Colors.white,
+                                backgroundColor: isDark ? Colors.white : textPrimary,
+                                foregroundColor: isDark ? Colors.black : Colors.white,
                                 elevation: 0,
                                 disabledBackgroundColor:
-                                    textPrimary.withValues(alpha: 0.5),
+                                    (isDark ? Colors.white : textPrimary).withValues(alpha: 0.5),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -269,7 +277,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       'By continuing, you agree to our Terms & Privacy Policy.',
                       style: TextStyle(
                         fontSize: 12,
-                        color: textSecondary.withValues(alpha: 0.6),
+                        color: (isDark ? textSecondaryDark : textSecondary).withValues(alpha: 0.6),
                       ),
                       textAlign: TextAlign.center,
                     ),

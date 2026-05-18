@@ -25,21 +25,21 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
   @override
   Widget build(BuildContext context) {
     final notifState = ref.watch(notificationProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: surfaceBg,
       appBar: AppBar(
         title: const Text('Activity'),
       ),
       body: notifState.isLoading
-          ? _skeletonList()
+          ? _skeletonList(isDark)
           : notifState.notifications.isEmpty
-              ? _emptyState()
-              : _notificationList(notifState),
+              ? _emptyState(isDark)
+              : _notificationList(notifState, isDark),
     );
   }
 
-  Widget _skeletonList() {
+  Widget _skeletonList(bool isDark) {
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       itemCount: 8,
@@ -47,7 +47,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     );
   }
 
-  Widget _emptyState() {
+  Widget _emptyState(bool isDark) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -62,21 +62,22 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
             child: const Icon(Icons.notifications_outlined,
                 size: 28, color: accent),
           ),
-          const SizedBox(height: 16),
-          const Text('No activity yet',
+            const SizedBox(height: 16),
+          Text('No activity yet',
               style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: textPrimary)),
+                  color: isDark ? textPrimaryDark : textPrimary)),
           const SizedBox(height: 4),
-          const Text('Expenses and payments will appear here.',
-              style: TextStyle(fontSize: 13, color: textSecondary)),
+          Text('Expenses and payments will appear here.',
+              style: TextStyle(fontSize: 13,
+                  color: isDark ? textSecondaryDark : textSecondary)),
         ],
       ),
     );
   }
 
-  Widget _notificationList(NotificationState notifState) {
+  Widget _notificationList(NotificationState notifState, bool isDark) {
     return PullToRefresh(
       onRefresh: () =>
           ref.read(notificationProvider.notifier).loadNotifications(),
@@ -88,7 +89,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
           return Container(
             margin: const EdgeInsets.only(bottom: 6),
             child: Material(
-              color: Colors.white,
+              color: isDark ? cardBgDark : Colors.white,
               borderRadius: BorderRadius.circular(12),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
@@ -103,17 +104,17 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                             CrossAxisAlignment.start,
                         children: [
                           Text(n.message,
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontSize: 14,
-                                  color: textPrimary,
+                                  color: isDark ? textPrimaryDark : textPrimary,
                                   fontWeight: FontWeight.w500)),
                           const SizedBox(height: 2),
                           Text(
                             DateFormat('MMM d, h:mm a')
                                 .format(n.createdAt),
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 12,
-                                color: textSecondary),
+                                color: isDark ? textSecondaryDark : textSecondary),
                           ),
                         ],
                       ),

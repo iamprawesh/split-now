@@ -26,9 +26,13 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
   Widget build(BuildContext context) {
     final groupState = ref.watch(groupProvider);
     final invite = groupState.invite;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textCol = isDark ? textPrimaryDark : textPrimary;
+    final subtextCol = isDark ? textSecondaryDark : textSecondary;
+    final bgColor = isDark ? cardBgDark : Colors.white;
+    final borderCol = isDark ? borderDark : borderLight;
 
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Invite'),
         leading: IconButton(
@@ -42,51 +46,56 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Text('Share invite code',
+              Text('Share invite code',
                   style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
-                      color: textPrimary)),
+                      color: textCol)),
               const SizedBox(height: 6),
               Text('Ask friends to scan this QR or share the link.',
-                  style: TextStyle(fontSize: 13, color: textSecondary),
+                  style: TextStyle(fontSize: 13, color: subtextCol),
                   textAlign: TextAlign.center),
               const SizedBox(height: 32),
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: borderLight),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 20,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: groupState.isLoading
-                    ? SizedBox(
-                        width: 200,
-                        height: 200,
-                        child: Center(
-                          child: _PulseLoader(),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final qrSize = (constraints.maxWidth > 280 ? 280 : constraints.maxWidth).toDouble();
+                  return Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: bgColor,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: borderCol),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 20,
+                          offset: const Offset(0, 4),
                         ),
-                      )
-                    : invite != null
-                        ? QrImageView(
-                            data: invite.qrData,
-                            version: QrVersions.auto,
-                            size: 200,
-                            backgroundColor: Colors.white,
+                      ],
+                    ),
+                    child: groupState.isLoading
+                        ? SizedBox(
+                            width: qrSize,
+                            height: qrSize,
+                            child: Center(
+                              child: _PulseLoader(isDark: isDark),
+                            ),
                           )
-                        : const SizedBox(
-                            width: 200,
-                            height: 200,
-                            child: Center(child: Text('Failed to load',
-                                style: TextStyle(color: textSecondary))),
-                          ),
+                        : invite != null
+                            ? QrImageView(
+                                data: invite.qrData,
+                                version: QrVersions.auto,
+                                size: qrSize,
+                                backgroundColor: bgColor,
+                              )
+                            : SizedBox(
+                                width: qrSize,
+                                height: qrSize,
+                                child: Center(child: Text('Failed to load',
+                                    style: TextStyle(color: subtextCol))),
+                              ),
+                  );
+                },
               ),
               const SizedBox(height: 28),
               if (invite != null) ...[
@@ -94,7 +103,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: surfaceBg,
+                    color: isDark ? surfaceBgDark : surfaceBg,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Row(
@@ -102,8 +111,8 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
                       Expanded(
                         child: Text(
                           invite.link,
-                          style: const TextStyle(
-                              fontSize: 13, color: textPrimary),
+                          style: TextStyle(
+                              fontSize: 13, color: textCol),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -147,6 +156,9 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
 }
 
 class _PulseLoader extends StatefulWidget {
+  final bool isDark;
+  const _PulseLoader({this.isDark = false});
+
   @override
   State<_PulseLoader> createState() => _PulseLoaderState();
 }
@@ -185,7 +197,7 @@ class _PulseLoaderState extends State<_PulseLoader>
               width: 200,
               height: 200,
               decoration: BoxDecoration(
-                color: borderLight.withValues(alpha: 0.3),
+                color: (widget.isDark ? borderDark : borderLight).withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Center(
@@ -194,8 +206,9 @@ class _PulseLoaderState extends State<_PulseLoader>
               ),
             ),
             const SizedBox(height: 16),
-            const Text('Generating invite...',
-                style: TextStyle(fontSize: 13, color: textSecondary)),
+            Text('Generating invite...',
+                style: TextStyle(fontSize: 13,
+                    color: widget.isDark ? textSecondaryDark : textSecondary)),
           ],
         ),
       ),

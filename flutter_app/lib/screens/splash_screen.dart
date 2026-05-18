@@ -76,15 +76,21 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFEEF0FF),
-              Color(0xFFF8F9FA),
-              Color(0xFFFFFFFF),
-            ],
+            colors: Theme.of(context).brightness == Brightness.dark
+                ? [
+                    surfaceBgDark,
+                    surfaceBgDark,
+                    cardBgDark,
+                  ]
+                : [
+                    const Color(0xFFEEF0FF),
+                    const Color(0xFFF8F9FA),
+                    const Color(0xFFFFFFFF),
+                  ],
           ),
         ),
         child: SafeArea(
@@ -150,12 +156,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                               ),
                             ),
                             const SizedBox(height: 32),
-                            const Text(
+                            Text(
                               'Split Now',
                               style: TextStyle(
                                 fontSize: 38,
                                 fontWeight: FontWeight.w800,
-                                color: textPrimary,
+                                color: Theme.of(context).brightness == Brightness.dark ? textPrimaryDark : textPrimary,
                                 letterSpacing: -0.5,
                               ),
                             ),
@@ -166,7 +172,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                                 'Split expenses with friends, easily.',
                                 style: TextStyle(
                                   fontSize: 15,
-                                  color: textSecondary.withValues(alpha: 0.8),
+                                  color: (Theme.of(context).brightness == Brightness.dark ? textSecondaryDark : textSecondary).withValues(alpha: 0.8),
                                   height: 1.4,
                                   letterSpacing: 0.2,
                                 ),
