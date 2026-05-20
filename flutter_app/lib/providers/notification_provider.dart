@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/notification_model.dart';
 import '../services/api_service.dart';
+import '../utils/crashlytics.dart';
 import 'auth_provider.dart';
 
 class NotificationState {
@@ -41,10 +42,11 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
     try {
       final response = await _api.get('/notifications');
       final notifications = (response.data as List)
-          .map((n) => AppNotification.fromJson(n))
+          .map((n) => safeParse(() => AppNotification.fromJson(n), context: 'AppNotification.fromJson'))
           .toList();
       state = state.copyWith(isLoading: false, notifications: notifications);
-    } catch (e) {
+    } catch (e, s) {
+      logError(e, s, context: 'loadNotifications');
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
@@ -53,14 +55,18 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
     try {
       final response = await _api.get('/notifications/unread-count');
       state = state.copyWith(unreadCount: response.data['count'] ?? 0);
-    } catch (_) {}
+    } catch (e, s) {
+      logError(e, s, context: 'loadUnreadCount');
+    }
   }
 
   Future<void> markAsRead(List<String> ids) async {
     try {
       await _api.post('/notifications/read', data: {'ids': ids});
       await loadUnreadCount();
-    } catch (_) {}
+    } catch (e, s) {
+      logError(e, s, context: 'markAsRead');
+    }
   }
 }
 

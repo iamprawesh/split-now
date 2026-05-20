@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/my_expense.dart';
 import '../services/api_service.dart';
+import '../utils/crashlytics.dart';
 import 'auth_provider.dart';
 
 class MyExpenseState {
@@ -98,11 +99,12 @@ class MyExpenseNotifier extends StateNotifier<MyExpenseState> {
     try {
       final response = await _api.get('/me/expenses');
       final list = (response.data as List)
-          .map((e) => MyExpense.fromJson(e))
+          .map((e) => safeParse(() => MyExpense.fromJson(e), context: 'MyExpense.fromJson'))
           .toList();
       state = MyExpenseState(expenses: list);
       loadAnalytics();
-    } catch (e) {
+    } catch (e, s) {
+      logError(e, s, context: 'loadExpenses');
       state = MyExpenseState(error: e.toString());
     }
   }
@@ -116,10 +118,11 @@ class MyExpenseNotifier extends StateNotifier<MyExpenseState> {
         'date': expense.date.toIso8601String(),
         'notes': expense.notes,
       });
-      final created = MyExpense.fromJson(response.data);
+      final created = safeParse(() => MyExpense.fromJson(response.data), context: 'MyExpense.fromJson');
       state = state.copyWith(expenses: [created, ...state.expenses]);
       loadAnalytics();
-    } catch (e) {
+    } catch (e, s) {
+      logError(e, s, context: 'addExpense');
       state = state.copyWith(error: e.toString());
     }
   }
@@ -133,12 +136,13 @@ class MyExpenseNotifier extends StateNotifier<MyExpenseState> {
         'date': updated.date.toIso8601String(),
         'notes': updated.notes,
       });
-      final saved = MyExpense.fromJson(response.data);
+      final saved = safeParse(() => MyExpense.fromJson(response.data), context: 'MyExpense.fromJson');
       state = state.copyWith(
         expenses: state.expenses.map((e) => e.id == saved.id ? saved : e).toList(),
       );
       loadAnalytics();
-    } catch (e) {
+    } catch (e, s) {
+      logError(e, s, context: 'updateExpense');
       state = state.copyWith(error: e.toString());
     }
   }
@@ -148,10 +152,11 @@ class MyExpenseNotifier extends StateNotifier<MyExpenseState> {
     try {
       final response = await _api.get('/me/expenses/analytics');
       state = state.copyWith(
-        analytics: PersonalExpenseAnalytics.fromJson(response.data),
+        analytics: safeParse(() => PersonalExpenseAnalytics.fromJson(response.data), context: 'PersonalExpenseAnalytics.fromJson'),
         analyticsLoading: false,
       );
-    } catch (e) {
+    } catch (e, s) {
+      logError(e, s, context: 'loadAnalytics');
       state = state.copyWith(analyticsLoading: false, analyticsError: e.toString());
     }
   }
@@ -163,7 +168,8 @@ class MyExpenseNotifier extends StateNotifier<MyExpenseState> {
     try {
       await _api.delete('/me/expenses/$id');
       await loadAnalytics();
-    } catch (e) {
+    } catch (e, s) {
+      logError(e, s, context: 'deleteExpense');
       await loadExpenses();
       state = state.copyWith(error: e.toString());
     }

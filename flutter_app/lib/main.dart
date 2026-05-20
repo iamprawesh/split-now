@@ -1,9 +1,11 @@
+import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'providers/auth_provider.dart';
 import 'providers/settings_provider.dart';
-import 'services/notification_service.dart';
 import 'screens/splash_screen.dart';
 
 const Color accent = Color(0xFF5B5FEF);
@@ -24,6 +26,17 @@ const Color borderDark = Color(0xFF2D2D3A);
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+
+  if (kReleaseMode) {
+    FlutterError.onError = (details) {
+      FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+    };
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
+  }
+
   runApp(const ProviderScope(child: SplitNowApp()));
 }
 
@@ -40,9 +53,7 @@ class _SplitNowAppState extends ConsumerState<SplitNowApp> {
     super.initState();
     Future.microtask(() async {
       await ref.read(apiServiceProvider).init();
-      ref.read(authProvider.notifier).checkAuth();
       ref.read(settingsProvider.notifier).loadSettings();
-      ref.read(notificationServiceProvider).init();
     });
   }
 

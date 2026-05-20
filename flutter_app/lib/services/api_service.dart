@@ -1,5 +1,8 @@
 import 'package:dio/dio.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   late final Dio _dio;
@@ -7,7 +10,10 @@ class ApiService {
 
   static const String _baseUrlKey = 'api_base_url';
   static const String _tokenKey = 'access_token';
-  static const String defaultBaseUrl = true ?"https://188c-202-166-205-90.ngrok-free.app/api":"https://split-now-production.up.railway.app/api"; // Android emulator
+  static const String _remotePrefsKey = 'remote_api_base_url';
+  static String get defaultBaseUrl => kReleaseMode
+      ? "https://split-now-production.up.railway.app/api"
+      : "https://f6c1-202-166-205-90.ngrok-free.app/api";
 
   ApiService() {
     _dio = Dio(BaseOptions(
@@ -22,9 +28,26 @@ class ApiService {
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
         }
+        debugPrint('[API] --> ${options.method} ${options.baseUrl}${options.path}');
+        if (options.data != null) {
+          debugPrint('[API] Body: ${options.data}');
+        }
         handler.next(options);
       },
+      onResponse: (response, handler) {
+        debugPrint('[API] <-- ${response.statusCode} ${response.requestOptions.method} ${response.requestOptions.baseUrl}${response.requestOptions.path}');
+        handler.next(response);
+      },
       onError: (error, handler) async {
+        debugPrint('[API] <-- ERROR ${error.response?.statusCode} ${error.requestOptions.method} ${error.requestOptions.baseUrl}${error.requestOptions.path}: ${error.message}');
+        if (error.response?.statusCode != 401) {
+          FirebaseCrashlytics.instance.recordError(
+            error.error ?? error,
+            error.stackTrace,
+            reason: 'API ${error.requestOptions.method} ${error.requestOptions.path}',
+            fatal: false,
+          );
+        }
         if (error.response?.statusCode == 401) {
           await _storage.delete(key: _tokenKey);
         }
@@ -41,8 +64,10 @@ class ApiService {
   }
 
   Future<void> init() async {
+    final prefs = await SharedPreferences.getInstance();
+    final remoteUrl = prefs.getString(_remotePrefsKey);
     final savedUrl = await _storage.read(key: _baseUrlKey);
-    _dio.options.baseUrl = savedUrl ?? defaultBaseUrl;
+    _dio.options.baseUrl = savedUrl ?? remoteUrl ?? defaultBaseUrl;
   }
 
   Future<void> setToken(String token) async {

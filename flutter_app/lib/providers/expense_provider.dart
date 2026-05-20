@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/expense.dart';
 import '../models/my_expense.dart';
 import '../services/api_service.dart';
+import '../utils/crashlytics.dart';
 import 'auth_provider.dart';
 import 'group_provider.dart';
 
@@ -10,6 +11,7 @@ class ExpenseState {
   final bool isCreating;
   final bool isSettling;
   final bool isDeleting;
+  final bool balancesLoading;
   final List<Expense> expenses;
   final BalanceData? balanceData;
   final List<Settlement> settlements;
@@ -23,6 +25,7 @@ class ExpenseState {
     this.isCreating = false,
     this.isSettling = false,
     this.isDeleting = false,
+    this.balancesLoading = false,
     this.expenses = const [],
     this.balanceData,
     this.settlements = const [],
@@ -37,6 +40,7 @@ class ExpenseState {
     bool? isCreating,
     bool? isSettling,
     bool? isDeleting,
+    bool? balancesLoading,
     List<Expense>? expenses,
     BalanceData? balanceData,
     List<Settlement>? settlements,
@@ -50,6 +54,7 @@ class ExpenseState {
       isCreating: isCreating ?? this.isCreating,
       isSettling: isSettling ?? this.isSettling,
       isDeleting: isDeleting ?? this.isDeleting,
+      balancesLoading: balancesLoading ?? this.balancesLoading,
       expenses: expenses ?? this.expenses,
       balanceData: balanceData ?? this.balanceData,
       settlements: settlements ?? this.settlements,
@@ -72,10 +77,11 @@ class ExpenseNotifier extends StateNotifier<ExpenseState> {
     try {
       final response = await _api.get('/groups/$groupId/expenses/analytics');
       state = state.copyWith(
-        analytics: PersonalExpenseAnalytics.fromJson(response.data),
+        analytics: safeParse(() => PersonalExpenseAnalytics.fromJson(response.data), context: 'PersonalExpenseAnalytics.fromJson'),
         analyticsLoading: false,
       );
-    } catch (e) {
+    } catch (e, s) {
+      logError(e, s, context: 'loadGroupAnalytics');
       state = state.copyWith(analyticsLoading: false, analyticsError: e.toString());
     }
   }
@@ -85,10 +91,11 @@ class ExpenseNotifier extends StateNotifier<ExpenseState> {
     try {
       final response = await _api.get('/groups/$groupId/expenses');
       final expenses = (response.data as List)
-          .map((e) => Expense.fromJson(e))
+          .map((e) => safeParse(() => Expense.fromJson(e), context: 'Expense.fromJson'))
           .toList();
       state = state.copyWith(isLoading: false, expenses: expenses);
-    } catch (e) {
+    } catch (e, s) {
+      logError(e, s, context: 'loadExpenses');
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
@@ -139,7 +146,6 @@ class ExpenseNotifier extends StateNotifier<ExpenseState> {
     );
     state = state.copyWith(
       expenses: [optimisticExpense, ...state.expenses],
-      isCreating: false,
     );
 
     try {
@@ -153,10 +159,13 @@ class ExpenseNotifier extends StateNotifier<ExpenseState> {
         'splits': splits,
         if (date != null) 'date': date,
       });
+      state = state.copyWith(isCreating: false);
       await loadExpenses(groupId);
       loadGroupAnalytics(groupId);
-    } catch (e) {
+    } catch (e, s) {
+      logError(e, s, context: 'createExpense');
       state = state.copyWith(
+        isCreating: false,
         expenses: state.expenses.where((e) => e.id != tempId).toList(),
         error: e.toString(),
       );
@@ -164,13 +173,16 @@ class ExpenseNotifier extends StateNotifier<ExpenseState> {
   }
 
   Future<void> loadBalances(String groupId) async {
+    state = state.copyWith(balancesLoading: true);
     try {
       final response = await _api.get('/groups/$groupId/expenses/balances');
       state = state.copyWith(
-        balanceData: BalanceData.fromJson(response.data),
+        balancesLoading: false,
+        balanceData: safeParse(() => BalanceData.fromJson(response.data), context: 'BalanceData.fromJson'),
       );
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
+    } catch (e, s) {
+      logError(e, s, context: 'loadBalances');
+      state = state.copyWith(balancesLoading: false, error: e.toString());
     }
   }
 
@@ -178,10 +190,11 @@ class ExpenseNotifier extends StateNotifier<ExpenseState> {
     try {
       final response = await _api.get('/groups/$groupId/settlements');
       final settlements = (response.data as List)
-          .map((s) => Settlement.fromJson(s))
+          .map((s) => safeParse(() => Settlement.fromJson(s), context: 'Settlement.fromJson'))
           .toList();
       state = state.copyWith(settlements: settlements);
-    } catch (e) {
+    } catch (e, s) {
+      logError(e, s, context: 'loadSettlements');
       state = state.copyWith(error: e.toString());
     }
   }
@@ -202,7 +215,8 @@ class ExpenseNotifier extends StateNotifier<ExpenseState> {
       state = state.copyWith(isSettling: false);
       await loadSettlements(groupId);
       await loadBalances(groupId);
-    } catch (e) {
+    } catch (e, s) {
+      logError(e, s, context: 'createSettlement');
       state = state.copyWith(isSettling: false, error: e.toString());
     }
   }
@@ -234,13 +248,14 @@ class ExpenseNotifier extends StateNotifier<ExpenseState> {
         'splits': splits,
         if (date != null) 'date': date,
       });
-      final updated = Expense.fromJson(response.data);
+      final updated = safeParse(() => Expense.fromJson(response.data), context: 'Expense.fromJson');
       state = state.copyWith(
         expenses: state.expenses.map((e) => e.id == expenseId ? updated : e).toList(),
         isCreating: false,
       );
       _refreshAnalytics(groupId);
-    } catch (e) {
+    } catch (e, s) {
+      logError(e, s, context: 'updateExpense');
       state = state.copyWith(
         isCreating: false,
         expenses: oldExpenses,
@@ -253,9 +268,11 @@ class ExpenseNotifier extends StateNotifier<ExpenseState> {
     try {
       final response = await _api.get('/groups/$groupId/expenses/analytics');
       state = state.copyWith(
-        analytics: PersonalExpenseAnalytics.fromJson(response.data),
+        analytics: safeParse(() => PersonalExpenseAnalytics.fromJson(response.data), context: 'PersonalExpenseAnalytics.fromJson'),
       );
-    } catch (_) {}
+    } catch (e, s) {
+      logError(e, s, context: '_refreshAnalytics');
+    }
   }
 
   Future<void> deleteExpense(String groupId, String expenseId) async {
@@ -265,7 +282,8 @@ class ExpenseNotifier extends StateNotifier<ExpenseState> {
       state = state.copyWith(isDeleting: false);
       await loadExpenses(groupId);
       _refreshAnalytics(groupId);
-    } catch (e) {
+    } catch (e, s) {
+      logError(e, s, context: 'deleteExpense');
       state = state.copyWith(isDeleting: false, error: e.toString());
     }
   }

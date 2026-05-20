@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/auth_provider.dart';
 import '../providers/settings_provider.dart';
+import '../services/notification_service.dart';
+import '../services/remote_config_service.dart';
 import '../main.dart';
 import 'auth_screen.dart';
 import 'dashboard_screen.dart';
@@ -70,10 +72,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AuthState>(authProvider, (prev, next) {
-      _tryNavigate();
-    });
-
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -221,7 +219,25 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   Future<void> _checkOnboarding() async {
     if (_navigated || !mounted) return;
+
     final prefs = await SharedPreferences.getInstance();
+
+    if (true) {
+      final rcService = RemoteConfigService(prefs);
+      final remoteUrl = await rcService.fetchAndCache();
+      if (remoteUrl != null && mounted) {
+        ref.read(apiServiceProvider).setBaseUrl(remoteUrl);
+      }
+    }
+
+    if (mounted) {
+      ref.read(notificationServiceProvider).init();
+    }
+
+    if (mounted) {
+      await ref.read(authProvider.notifier).checkAuth();
+    }
+
     final isOnboarded = prefs.getBool('onboarding_done') ?? false;
 
     if (!isOnboarded && mounted) {

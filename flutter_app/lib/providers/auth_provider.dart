@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/user.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
+import '../utils/crashlytics.dart';
 
 final apiServiceProvider = Provider<ApiService>((ref) => ApiService());
 final authServiceProvider = Provider<AuthService>((ref) => AuthService());
@@ -48,10 +49,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
       try {
         final response = await _api.get('/auth/profile');
         state = AuthState(
-          user: User.fromJson(response.data),
+          user: safeParse(() => User.fromJson(response.data), context: 'User.fromJson'),
           isAuthenticated: true,
         );
-      } catch (_) {
+      } catch (e, s) {
+        logError(e, s, context: 'checkAuth');
         await _api.clearToken();
         state = AuthState();
       }
@@ -85,10 +87,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
       unawaited(_registerFcmToken());
 
       state = AuthState(
-        user: User.fromJson(data['user']),
+        user: safeParse(() => User.fromJson(data['user']), context: 'User.fromJson'),
         isAuthenticated: true,
       );
-    } catch (e) {
+    } catch (e, s) {
+      logError(e, s, context: 'signInWithGoogle');
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
@@ -111,10 +114,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
       unawaited(_registerFcmToken());
 
       state = AuthState(
-        user: User.fromJson(data['user']),
+        user: safeParse(() => User.fromJson(data['user']), context: 'User.fromJson'),
         isAuthenticated: true,
       );
-    } catch (e) {
+    } catch (e, s) {
+      logError(e, s, context: 'signInWithApple');
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
